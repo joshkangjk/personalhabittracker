@@ -797,7 +797,7 @@ export default function HabitTrackerMVP() {
                 <div className="space-y-1">
                   <CardTitle>Daily Log</CardTitle>
                 </div>
-                <div className="flex flex-row items-center justify-end gap-3 md:gap-6 w-full">
+                <div className="flex flex-row items-center justify-start gap-3 md:gap-6 w-full">
                   <div className="flex items-center gap-2 md:order-2">
                     <Label className="hidden md:block text-xs text-muted-foreground">Date</Label>
                     <Input
