@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = "pookie_habit_tracker_v1";
 
@@ -322,6 +322,27 @@ function entriesFromRows(rows) {
   return out;
 }
 
+// Small hook to detect mobile screens
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const onChange = () => setIsMobile(Boolean(mq.matches));
+    onChange();
+
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else mq.addListener(onChange);
+
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+      else mq.removeListener(onChange);
+    };
+  }, []);
+
+  return isMobile;
+}
+
 export default function HabitTrackerMVP() {
   const [session, setSession] = useState(null);
   const [cloudReady, setCloudReady] = useState(false);
@@ -331,6 +352,7 @@ export default function HabitTrackerMVP() {
   const [activeDate, setActiveDate] = useState(todayISO());
   const [historyMonth, setHistoryMonth] = useState("all");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data?.session || null));
@@ -409,25 +431,11 @@ export default function HabitTrackerMVP() {
     return state.habits || [];
   }, [state.habits]);
 
-  async function reorderHabits(fromId, toId) {
-    if (!fromId || !toId || fromId === toId) return;
+  async function persistHabitOrder(list) {
     const userId = session?.user?.id;
     if (!userId) return;
 
-    let nextList = null;
-    setState((s) => {
-      const list = [...(s.habits || [])];
-      const fromIndex = list.findIndex((h) => h.id === fromId);
-      const toIndex = list.findIndex((h) => h.id === toId);
-      if (fromIndex < 0 || toIndex < 0) return s;
-      const [moved] = list.splice(fromIndex, 1);
-      list.splice(toIndex, 0, moved);
-      nextList = list;
-      return { ...s, habits: list };
-    });
-
-    // Persist sort order
-    const updates = (nextList || []).map((h, idx) => ({
+    const updates = (list || []).map((h, idx) => ({
       id: h.id,
       user_id: userId,
       sort_index: idx,
@@ -435,6 +443,51 @@ export default function HabitTrackerMVP() {
 
     const res = await supabase.from("habits").upsert(updates, { onConflict: "id" });
     if (res.error) setCloudError(res.error.message || "Failed to save order");
+  }
+
+  async function moveHabitByDelta(habitId, delta) {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    if (!habitId || !delta) return;
+
+    let nextList = null;
+    setState((s) => {
+      const list = [...(s.habits || [])];
+      const fromIndex = list.findIndex((h) => h.id === habitId);
+      if (fromIndex < 0) return s;
+
+      const toIndex = Math.max(0, Math.min(list.length - 1, fromIndex + delta));
+      if (toIndex === fromIndex) return s;
+
+      const [moved] = list.splice(fromIndex, 1);
+      list.splice(toIndex, 0, moved);
+      nextList = list;
+      return { ...s, habits: list };
+    });
+
+    await persistHabitOrder(nextList);
+  }
+
+  async function reorderHabits(fromId, toId) {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    if (!fromId || !toId || fromId === toId) return;
+
+    let nextList = null;
+    setState((s) => {
+      const list = [...(s.habits || [])];
+      const fromIndex = list.findIndex((h) => h.id === fromId);
+      const toIndex = list.findIndex((h) => h.id === toId);
+      if (fromIndex < 0 || toIndex < 0) return s;
+      if (fromIndex === toIndex) return s;
+
+      const [moved] = list.splice(fromIndex, 1);
+      list.splice(toIndex, 0, moved);
+      nextList = list;
+      return { ...s, habits: list };
+    });
+
+    await persistHabitOrder(nextList);
   }
 
   const datesInYear = useMemo(() => listDatesInYear(state.entries, selectedYear), [state.entries, selectedYear]);
@@ -630,7 +683,7 @@ export default function HabitTrackerMVP() {
       <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
         <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker v2</h1>
             <div className="text-xs text-muted-foreground">
               {cloudError ? `Cloud error: ${cloudError}` : cloudReady ? "Synced" : "Loading cloud..."}
             </div>
@@ -758,7 +811,7 @@ export default function HabitTrackerMVP() {
                   {habits.length === 0 ? (
                     <div className="text-sm text-muted-foreground">No habits yet. Add one.</div>
                   ) : (
-                    habits.map((h) => (
+                    habits.map((h, idx) => (
                       <HabitLogRow
                         key={h.id}
                         habit={h}
@@ -767,22 +820,39 @@ export default function HabitTrackerMVP() {
                         onDelete={() => deleteHabit(h.id)}
                         onEditHabit={(patch) => updateHabit(h.id, patch)}
                         dragging={draggingHabitId === h.id}
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", h.id);
-                          e.dataTransfer.effectAllowed = "move";
-                          setDraggingHabitId(h.id);
-                        }}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = "move";
-                        }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const fromId = e.dataTransfer.getData("text/plain");
-                          reorderHabits(fromId, h.id);
-                          setDraggingHabitId("");
-                        }}
-                        onDragEnd={() => setDraggingHabitId("")}
+                        onDragStart={
+                          isMobile
+                            ? undefined
+                            : (e) => {
+                                e.dataTransfer.setData("text/plain", h.id);
+                                e.dataTransfer.effectAllowed = "move";
+                                setDraggingHabitId(h.id);
+                              }
+                        }
+                        onDragOver={
+                          isMobile
+                            ? undefined
+                            : (e) => {
+                                e.preventDefault();
+                                e.dataTransfer.dropEffect = "move";
+                              }
+                        }
+                        onDrop={
+                          isMobile
+                            ? undefined
+                            : (e) => {
+                                e.preventDefault();
+                                const fromId = e.dataTransfer.getData("text/plain");
+                                reorderHabits(fromId, h.id);
+                                setDraggingHabitId("");
+                              }
+                        }
+                        onDragEnd={isMobile ? undefined : () => setDraggingHabitId("")}
+                        index={idx}
+                        totalHabits={habits.length}
+                        isMobile={isMobile}
+                        onMoveUp={() => moveHabitByDelta(h.id, -1)}
+                        onMoveDown={() => moveHabitByDelta(h.id, 1)}
                       />
                     ))
                   )}
@@ -1195,6 +1265,11 @@ function HabitLogRow({
   onDragOver,
   onDrop,
   onDragEnd,
+  isMobile,
+  index,
+  totalHabits,
+  onMoveUp,
+  onMoveDown,
 }) {
   const [value, setValue] = useState(() => {
     if (!entry) return habit.type === "checkbox" ? false : "";
@@ -1231,11 +1306,11 @@ function HabitLogRow({
   return (
     <div
       className={`rounded-2xl border p-2 md:p-3 ${dragging ? "opacity-60" : ""}`}
-      draggable
-      onDragStart={onDragStart}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      draggable={!isMobile}
+      onDragStart={isMobile ? undefined : onDragStart}
+      onDragOver={isMobile ? undefined : onDragOver}
+      onDrop={isMobile ? undefined : onDrop}
+      onDragEnd={isMobile ? undefined : onDragEnd}
     >
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
         <div className="space-y-1">
@@ -1293,14 +1368,40 @@ function HabitLogRow({
             </div>
           )}
 
-          <div className="flex items-center">
-            <div
-              className="rounded-xl border px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing md:px-2 md:py-2"
-              title="Drag to reorder"
-            >
-              <GripVertical className="h-4 w-4" />
+          {/* Desktop drag handle */}
+          {!isMobile ? (
+            <div className="flex items-center">
+              <div
+                className="rounded-xl border px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing"
+                title="Drag to reorder"
+              >
+                <GripVertical className="h-4 w-4" />
+              </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 w-9 px-0"
+                onClick={onMoveUp}
+                disabled={index === 0}
+                aria-label="Move up"
+              >
+                <ChevronUp className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 w-9 px-0"
+                onClick={onMoveDown}
+                disabled={index === totalHabits - 1}
+                aria-label="Move down"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
 
           <EditHabitDialog habit={habit} onSave={onEditHabit} onDeleteHabit={onDelete} />
         </div>
