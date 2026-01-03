@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Download, GripVertical, Plus, Trash2 } from "lucide-react";
+import { Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = "pookie_habit_tracker_v1";
 
@@ -330,6 +330,7 @@ export default function HabitTrackerMVP() {
   const [state, setState] = useState(() => ensureStateShape(loadState()) || defaultState());
   const [activeDate, setActiveDate] = useState(todayISO());
   const [historyMonth, setHistoryMonth] = useState("all");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data?.session || null));
@@ -635,7 +636,8 @@ export default function HabitTrackerMVP() {
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
+          {/* Desktop controls */}
+          <div className="hidden md:flex items-center gap-3">
             <div className="flex items-center gap-2">
               <Label className="text-xs text-muted-foreground">Year</Label>
               <Select
@@ -656,6 +658,7 @@ export default function HabitTrackerMVP() {
                 </SelectContent>
               </Select>
             </div>
+
             <div className="flex items-center gap-2">
               <Button onClick={exportJSON} className="gap-2">
                 <Download className="h-4 w-4" /> Export
@@ -664,6 +667,60 @@ export default function HabitTrackerMVP() {
                 Sign out
               </Button>
             </div>
+          </div>
+
+          {/* Mobile controls */}
+          <div className="md:hidden">
+            <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="h-9 w-9 px-0" aria-label="More">
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Menu</DialogTitle>
+                </DialogHeader>
+
+                <div className="grid gap-4">
+                  <div className="grid gap-2">
+                    <Label className="text-sm text-muted-foreground">Year</Label>
+                    <Select
+                      value={String(selectedYear)}
+                      onValueChange={(v) =>
+                        setState((s) => ({ ...s, ui: { ...s.ui, selectedYear: Number(v) } }))
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {yearOptions.map((y) => (
+                          <SelectItem key={y} value={String(y)}>
+                            {y}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Button onClick={() => { exportJSON(); setMobileMenuOpen(false); }} className="gap-2">
+                      <Download className="h-4 w-4" /> Export
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        supabase.auth.signOut();
+                      }}
+                    >
+                      Sign out
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </header>
 
@@ -680,16 +737,18 @@ export default function HabitTrackerMVP() {
                 <div className="space-y-1">
                   <CardTitle>Daily Log</CardTitle>
                 </div>
-                <div className="flex items-center gap-6">
-                  <AddHabitDialog onAdd={addHabit} />
-                  <div className="flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Date</Label>
+                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto">
+                  <div className="flex items-center gap-2 md:order-2">
+                    <Label className="hidden md:block text-xs text-muted-foreground">Date</Label>
                     <Input
                       type="date"
                       value={activeDate}
                       onChange={(e) => setActiveDate(e.target.value)}
-                      className="w-[160px]"
+                      className="w-full md:w-[160px]"
                     />
+                  </div>
+                  <div className="md:order-1">
+                    <AddHabitDialog onAdd={addHabit} />
                   </div>
                 </div>
               </CardHeader>
@@ -1171,21 +1230,21 @@ function HabitLogRow({
 
   return (
     <div
-      className={`rounded-2xl border p-3 ${dragging ? "opacity-60" : ""}`}
+      className={`rounded-2xl border p-2 md:p-3 ${dragging ? "opacity-60" : ""}`}
       draggable
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDrop={onDrop}
       onDragEnd={onDragEnd}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="font-medium">{habit.name}</div>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        <div className="flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap">
           {habit.type === "checkbox" ? (
             <div className="flex items-center gap-2 rounded-2xl border px-3 py-2">
               <Switch
@@ -1235,7 +1294,10 @@ function HabitLogRow({
           )}
 
           <div className="flex items-center">
-            <div className="rounded-xl border px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing" title="Drag to reorder">
+            <div
+              className="rounded-xl border px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing md:px-2 md:py-2"
+              title="Drag to reorder"
+            >
               <GripVertical className="h-4 w-4" />
             </div>
           </div>
@@ -1280,7 +1342,7 @@ function EditHabitDialog({ habit, onSave, onDeleteHabit }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Edit</Button>
+        <Button variant="outline" className="h-9 px-3">Edit</Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl">
         <DialogHeader>
