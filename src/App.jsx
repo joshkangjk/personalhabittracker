@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { ChevronDown, ChevronUp, Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
 
 const STORAGE_KEY = "pookie_habit_tracker_v1";
 
@@ -445,27 +445,34 @@ export default function HabitTrackerMVP() {
     if (res.error) setCloudError(res.error.message || "Failed to save order");
   }
 
-  async function moveHabitByDelta(habitId, delta) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    if (!habitId || !delta) return;
 
-    let nextList = null;
-    setState((s) => {
-      const list = [...(s.habits || [])];
-      const fromIndex = list.findIndex((h) => h.id === habitId);
-      if (fromIndex < 0) return s;
+  // Touch drag reorder handlers for mobile
+  const [touchDragging, setTouchDragging] = useState(false);
 
-      const toIndex = Math.max(0, Math.min(list.length - 1, fromIndex + delta));
-      if (toIndex === fromIndex) return s;
+  function getHabitIdFromEventTarget(el) {
+    const node = el?.closest?.("[data-habit-id]");
+    return node?.getAttribute?.("data-habit-id") || "";
+  }
 
-      const [moved] = list.splice(fromIndex, 1);
-      list.splice(toIndex, 0, moved);
-      nextList = list;
-      return { ...s, habits: list };
-    });
+  function onTouchDragStart(habitId) {
+    setDraggingHabitId(habitId);
+    setTouchDragging(true);
+  }
 
-    await persistHabitOrder(nextList);
+  async function onTouchDragMove(clientX, clientY) {
+    if (!draggingHabitId) return;
+    const el = document.elementFromPoint(clientX, clientY);
+    const overId = getHabitIdFromEventTarget(el);
+    if (!overId || overId === draggingHabitId) return;
+    // reorder immediately for a responsive feel
+    await reorderHabits(draggingHabitId, overId);
+    // keep dragging the same habit id
+    setDraggingHabitId(draggingHabitId);
+  }
+
+  function onTouchDragEnd() {
+    setTouchDragging(false);
+    setDraggingHabitId("");
   }
 
   async function reorderHabits(fromId, toId) {
@@ -681,9 +688,9 @@ export default function HabitTrackerMVP() {
   return (
     <div className="min-h-screen w-full bg-background text-foreground">
       <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
-        <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <header className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-3">
           <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker v2</h1>
+            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker</h1>
             <div className="text-xs text-muted-foreground">
               {cloudError ? `Cloud error: ${cloudError}` : cloudReady ? "Synced" : "Loading cloud..."}
             </div>
@@ -723,7 +730,7 @@ export default function HabitTrackerMVP() {
           </div>
 
           {/* Mobile controls */}
-          <div className="md:hidden">
+          <div className="md:hidden absolute top-0 right-0">
             <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="h-9 w-9 px-0" aria-label="More">
@@ -790,17 +797,17 @@ export default function HabitTrackerMVP() {
                 <div className="space-y-1">
                   <CardTitle>Daily Log</CardTitle>
                 </div>
-                <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-6 w-full md:w-auto">
-                  <div className="flex items-center gap-2 md:order-2">
+                <div className="flex flex-row items-center justify-between gap-3 md:gap-6 w-full md:w-auto">
+                  <div className="flex items-center gap-2 md:order-2 flex-1 justify-end">
                     <Label className="hidden md:block text-xs text-muted-foreground">Date</Label>
                     <Input
                       type="date"
                       value={activeDate}
                       onChange={(e) => setActiveDate(e.target.value)}
-                      className="w-full md:w-[160px]"
+                      className="w-[160px] md:w-[160px]"
                     />
                   </div>
-                  <div className="md:order-1">
+                  <div className="md:order-1 shrink-0">
                     <AddHabitDialog onAdd={addHabit} />
                   </div>
                 </div>
@@ -848,11 +855,11 @@ export default function HabitTrackerMVP() {
                               }
                         }
                         onDragEnd={isMobile ? undefined : () => setDraggingHabitId("")}
-                        index={idx}
-                        totalHabits={habits.length}
                         isMobile={isMobile}
-                        onMoveUp={() => moveHabitByDelta(h.id, -1)}
-                        onMoveDown={() => moveHabitByDelta(h.id, 1)}
+                        onTouchStartDrag={() => onTouchDragStart(h.id)}
+                        onTouchMoveDrag={(x, y) => onTouchDragMove(x, y)}
+                        onTouchEndDrag={() => onTouchDragEnd()}
+                        touchDragging={touchDragging}
                       />
                     ))
                   )}
@@ -1130,7 +1137,7 @@ function AddHabitDialog({ onAdd }) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="gap-2">
-          <Plus className="h-4 w-4" /> Add habit
+          <Plus className="h-4 w-4" /> Add Habit
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-xl">
@@ -1266,10 +1273,10 @@ function HabitLogRow({
   onDrop,
   onDragEnd,
   isMobile,
-  index,
-  totalHabits,
-  onMoveUp,
-  onMoveDown,
+  onTouchStartDrag,
+  onTouchMoveDrag,
+  onTouchEndDrag,
+  touchDragging,
 }) {
   const [value, setValue] = useState(() => {
     if (!entry) return habit.type === "checkbox" ? false : "";
@@ -1305,6 +1312,7 @@ function HabitLogRow({
 
   return (
     <div
+      data-habit-id={habit.id}
       className={`rounded-2xl border p-2 md:p-3 ${dragging ? "opacity-60" : ""}`}
       draggable={!isMobile}
       onDragStart={isMobile ? undefined : onDragStart}
@@ -1368,40 +1376,33 @@ function HabitLogRow({
             </div>
           )}
 
-          {/* Desktop drag handle */}
-          {!isMobile ? (
-            <div className="flex items-center">
-              <div
-                className="rounded-xl border px-2 py-2 text-muted-foreground cursor-grab active:cursor-grabbing"
-                title="Drag to reorder"
-              >
-                <GripVertical className="h-4 w-4" />
-              </div>
+          {/* Reorder handle */}
+          <div className="flex items-center">
+            <div
+              className={`rounded-xl border px-2 py-2 text-muted-foreground ${isMobile ? "" : "cursor-grab active:cursor-grabbing"} ${touchDragging ? "opacity-60" : ""}`}
+              title={isMobile ? "Press and drag to reorder" : "Drag to reorder"}
+              onTouchStart={
+                isMobile
+                  ? (e) => {
+                      e.preventDefault();
+                      onTouchStartDrag?.();
+                    }
+                  : undefined
+              }
+              onTouchMove={
+                isMobile
+                  ? (e) => {
+                      const t = e.touches?.[0];
+                      if (!t) return;
+                      onTouchMoveDrag?.(t.clientX, t.clientY);
+                    }
+                  : undefined
+              }
+              onTouchEnd={isMobile ? () => onTouchEndDrag?.() : undefined}
+            >
+              <GripVertical className="h-4 w-4" />
             </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-9 px-0"
-                onClick={onMoveUp}
-                disabled={index === 0}
-                aria-label="Move up"
-              >
-                <ChevronUp className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-9 px-0"
-                onClick={onMoveDown}
-                disabled={index === totalHabits - 1}
-                aria-label="Move down"
-              >
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </div>
-          )}
+          </div>
 
           <EditHabitDialog habit={habit} onSave={onEditHabit} onDeleteHabit={onDelete} />
         </div>
