@@ -224,22 +224,17 @@ function habitStats(habit, entries, year) {
 }
 
 function buildHabitSeries(habit, entries, year) {
-  const datesWithLogs = Object.keys(entries)
-    .filter((d) => withinYear(d, year))
-    .filter((d) => Boolean(getEntry(entries, d, habit.id)))
-    .sort();
+  // Start at Jan 1 of the selected year (not first log date)
+  const start = new Date(year, 0, 1);
 
-  if (datesWithLogs.length === 0) return [];
+  // End at today if it's the current year, otherwise end at Dec 31
+  const now = new Date();
+  const end =
+    year === now.getFullYear()
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      : new Date(year, 11, 31);
 
-  const minISO = datesWithLogs[0];
-  const maxISO = datesWithLogs[datesWithLogs.length - 1];
-
-  const [sy, sm, sd] = minISO.split("-").map(Number);
-  const [ey, em, ed] = maxISO.split("-").map(Number);
-
-  const start = new Date(sy, sm - 1, sd);
-  const end = new Date(ey, em - 1, ed);
-
+  // Goal setup
   const goal = clampNumber(habit.goalDaily || 0);
   const goalPeriod = habit.goalPeriod || "daily";
   const goalPerDay = goal > 0 ? (goalPeriod === "weekly" ? goal / 7 : goal) : 0;
