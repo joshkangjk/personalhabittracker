@@ -1130,17 +1130,17 @@ export default function HabitTrackerMVP() {
                 <div className="space-y-1">
                   <CardTitle className="whitespace-nowrap text-base font-semibold tracking-tight">Daily Log</CardTitle>
                 </div>
-                <div className="flex flex-row items-center justify-start md:justify-end gap-3 md:gap-6 w-full">
-                  <div className="flex items-center gap-2 md:order-2">
+                <div className="flex flex-col gap-3 w-full md:flex-row md:items-center md:justify-end md:gap-6">
+                  <div className="flex items-center justify-between gap-2 md:order-2">
                     <Label className="hidden md:block text-xs text-muted-foreground">Date</Label>
                     <Input
                       type="date"
                       value={activeDate}
                       onChange={handleActiveDateChange}
-                      className="w-[160px] md:w-[160px] rounded-2xl bg-background/60 shadow-sm border-0 focus-visible:ring-2 focus-visible:ring-muted/30"
+                      className="w-full md:w-[160px] rounded-2xl bg-background/60 shadow-sm border-0 text-left focus-visible:ring-2 focus-visible:ring-muted/30"
                     />
                   </div>
-                  <div className="md:order-1 shrink-0">
+                  <div className="md:order-1 w-full md:w-auto">
                     <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
                   </div>
                 </div>

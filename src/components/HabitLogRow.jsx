@@ -127,9 +127,19 @@ export default function HabitLogRow({
           {goalText ? <div className="text-xs text-muted-foreground">{goalText}</div> : null}
         </div>
 
-        <div className="flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap rounded-2xl bg-background/60 shadow-sm px-2 py-2">
+        <div
+          className={`rounded-2xl bg-background/60 shadow-sm px-2 py-2 ${
+            isMobile
+              ? "grid grid-cols-[1fr,auto] items-center gap-2"
+              : "flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap"
+          }`}
+        >
           {habit.type === "checkbox" ? (
-            <div className="flex items-center gap-2 rounded-2xl bg-background/60 shadow-sm px-3 py-2">
+            <div
+              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 ${
+                isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"
+              }`}
+            >
               <Switch checked={Boolean(value)} onCheckedChange={handleCheckboxChange} />
               <span className="text-sm">Done</span>
             </div>
@@ -155,7 +165,7 @@ export default function HabitLogRow({
             </div>
           )}
 
-          <div className="flex items-center">
+          <div className="flex items-center justify-end gap-2">
             <div
               className={`rounded-xl bg-background/60 shadow-sm px-2 py-2 text-muted-foreground ${
                 isMobile ? "" : "cursor-grab active:cursor-grabbing"
@@ -167,15 +177,15 @@ export default function HabitLogRow({
             >
               <GripVertical className="h-4 w-4" />
             </div>
-          </div>
 
-          <EditHabitDialog
-            key={habit.id}
-            habit={habit}
-            onSave={onEditHabit}
-            onDeleteHabit={onDelete}
-            clampNumber={clampNumber}
-          />
+            <EditHabitDialog
+              key={habit.id}
+              habit={habit}
+              onSave={onEditHabit}
+              onDeleteHabit={onDelete}
+              clampNumber={clampNumber}
+            />
+          </div>
         </div>
       </div>
     </div>
