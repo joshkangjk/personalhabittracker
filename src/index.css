@@ -1,3 +1,23 @@
+:root {
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: inherit;
+}
+
+/* Ensure Recharts SVG text uses the app font */
+.recharts-wrapper,
+.recharts-surface,
+.recharts-text,
+.recharts-cartesian-axis-tick-value {
+  font-family: inherit;
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
