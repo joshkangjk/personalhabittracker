@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,18 +7,32 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Download, GripVertical, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Download, MoreVertical } from "lucide-react";
 
+import LoginScreen from "./components/LoginScreen";
+import AddHabitDialog from "./components/AddHabitDialog";
+import HabitLogRow from "./components/HabitLogRow";
+import HistoryDay from "./components/HistoryDay";
+
+// =====================
+// Constants
+// =====================
 const STORAGE_KEY = "pookie_habit_tracker_v1";
 
-function todayISO() {
-  const d = new Date();
+// =====================
+// Date + number utils
+// =====================
+
+function isoFromDate(d) {
   const yyyy = d.getFullYear();
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
+}
+
+function todayISO() {
+  return isoFromDate(new Date());
 }
 
 function clampNumber(v) {
@@ -59,6 +73,9 @@ function formatNumberWithDecimals(n, decimals) {
     .replace(/(\.\d)0$/, "$1");
 }
 
+// =====================
+// Local storage state
+// =====================
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -73,10 +90,14 @@ function saveState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+// =====================
+// Generic helpers
+// =====================
 function uuid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `${Math.random().toString(16).slice(2)}${Date.now()}`;
 }
+
 
 function formatPrettyDate(iso) {
   try {
@@ -88,6 +109,17 @@ function formatPrettyDate(iso) {
   }
 }
 
+function formatAxisDate(iso) {
+  try {
+    const [y, m, d] = String(iso || "").split("-");
+    if (!y || !m || !d) return String(iso || "");
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+  } catch {
+    return String(iso || "");
+  }
+}
+
 function withinYear(iso, year) {
   return iso >= `${year}-01-01` && iso <= `${year}-12-31`;
 }
@@ -96,6 +128,21 @@ function monthFromISO(iso) {
   return iso?.slice(5, 7) || "";
 }
 
+function isoRangeForYear(year) {
+  return {
+    start: `${year}-01-01`,
+    end: `${year}-12-31`,
+  };
+}
+
+function buildYearOptions() {
+  const y = new Date().getFullYear();
+  return [y - 1, y, y + 1];
+}
+
+// =====================
+// State shape + defaults
+// =====================
 function defaultState() {
   const year = new Date().getFullYear();
   return {
@@ -131,7 +178,8 @@ function ensureStateShape(s) {
   if (!s.ui || typeof s.ui !== "object") s.ui = { selectedYear: new Date().getFullYear() };
   if (!s.ui.selectedYear) s.ui.selectedYear = new Date().getFullYear();
   const cy = new Date().getFullYear();
-  if (s.ui.selectedYear < cy) s.ui.selectedYear = cy;
+  // Allow browsing past years; only guard against obviously invalid values.
+  if (!Number.isFinite(Number(s.ui.selectedYear))) s.ui.selectedYear = cy;
   s.habits = (s.habits || []).map((h) => {
     if (h?.type !== "number") return h;
     if (h.decimals === undefined) return { ...h, decimals: 0 };
@@ -140,13 +188,23 @@ function ensureStateShape(s) {
   return s;
 }
 
-function buildYearOptions() {
-  const y = new Date().getFullYear();
-  return [y, y + 1];
-}
-
+// =====================
+// Entries helpers
+// =====================
 function getEntry(entries, dateISO, habitId) {
   return entries?.[dateISO]?.[habitId] ?? null;
+}
+
+function entryToNumber(habit, entry, fallback = 0) {
+  if (!entry) return fallback;
+  return habit.type === "checkbox" ? (entry.value ? 1 : 0) : clampNumber(entry.value);
+}
+
+function entryToDisplay(habit, entry) {
+  if (habit.type === "checkbox") return entry?.value ? "Done" : "Not done";
+  const dec = habitDecimals(habit);
+  const unit = habit.unit || "";
+  return `${formatNumberWithDecimals(entry?.value ?? 0, dec)} ${unit}`.trim();
 }
 
 function setEntry(entries, dateISO, habitId, payload) {
@@ -176,6 +234,9 @@ function listDatesInYear(entries, year) {
     .sort((a, b) => (a < b ? 1 : -1));
 }
 
+// =====================
+// Stats + chart series
+// =====================
 function habitStats(habit, entries, year) {
   const dates = Object.keys(entries)
     .filter((d) => withinYear(d, year))
@@ -190,7 +251,7 @@ function habitStats(habit, entries, year) {
     const e = getEntry(entries, d, habit.id);
     if (!e) continue;
     daysLogged += 1;
-    const v = habit.type === "checkbox" ? (e.value ? 1 : 0) : clampNumber(e.value);
+    const v = entryToNumber(habit, e, 0);
     total += v;
     if (habit.type === "number") {
       best = best === null ? v : Math.max(best, v);
@@ -201,12 +262,10 @@ function habitStats(habit, entries, year) {
   const points = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}`;
+    const iso = isoFromDate(d);
     if (!withinYear(iso, year)) continue;
     const e = getEntry(entries, iso, habit.id);
-    const v = e ? (habit.type === "checkbox" ? (e.value ? 1 : 0) : clampNumber(e.value)) : 0;
+    const v = entryToNumber(habit, e, 0);
     points.push(v);
   }
   last7 = points;
@@ -244,19 +303,11 @@ function buildHabitSeries(habit, entries, year) {
 
   const out = [];
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}`;
+    const iso = isoFromDate(d);
 
     const e = getEntry(entries, iso, habit.id);
 
-    const daily = e
-      ? habit.type === "checkbox"
-        ? e.value
-          ? 1
-          : 0
-        : clampNumber(e.value)
-      : 0;
+    const daily = entryToNumber(habit, e, 0);
 
     actualCum += daily;
     if (goal > 0) goalCum += goalPerDay;
@@ -272,13 +323,9 @@ function buildHabitSeries(habit, entries, year) {
   return out;
 }
 
-function isoRangeForYear(year) {
-  return {
-    start: `${year}-01-01`,
-    end: `${year}-12-31`,
-  };
-}
-
+// =====================
+// Supabase mappers + loading
+// =====================
 function habitFromRow(r) {
   return {
     id: r.id,
@@ -311,12 +358,46 @@ function entriesFromRows(rows) {
   for (const r of rows || []) {
     const d = String(r.date_iso);
     if (!out[d]) out[d] = {};
-    // store in the same payload shape used elsewhere: { value: ... }
+    // `r.value` is already the stored payload object, like: { value: ... }
     out[d][r.habit_id] = r.value;
   }
   return out;
 }
 
+async function loadCloudForYear({ userId, year }) {
+  const range = isoRangeForYear(year);
+
+  const habitsRes = await supabase
+    .from("habits")
+    .select("id,name,type,unit,decimals,goal_daily,goal_period,sort_index,created_at")
+    .eq("user_id", userId)
+    .order("sort_index", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (habitsRes.error) {
+    throw new Error(habitsRes.error.message || "Failed to load habits");
+  }
+
+  const entriesRes = await supabase
+    .from("entries")
+    .select("user_id,date_iso,habit_id,value")
+    .eq("user_id", userId)
+    .gte("date_iso", range.start)
+    .lte("date_iso", range.end);
+
+  if (entriesRes.error) {
+    throw new Error(entriesRes.error.message || "Failed to load entries");
+  }
+
+  return {
+    habitsNext: (habitsRes.data || []).map(habitFromRow),
+    entriesNext: entriesFromRows(entriesRes.data || []),
+  };
+}
+
+// =====================
+// Hooks
+// =====================
 // Small hook to detect mobile screens
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
@@ -338,6 +419,80 @@ function useIsMobile() {
   return isMobile;
 }
 
+// =====================
+// UI helpers + components
+// =====================
+function formatStatTotal(habit, total) {
+  if (habit.type === "checkbox") return `${Math.round(total)} days`;
+  const dec = habitDecimals(habit);
+  return `${formatNumberWithDecimals(total, dec)} ${habit.unit || ""}`.trim();
+}
+
+function formatStatAvg(habit, avg) {
+  if (habit.type === "checkbox") return `${avg.toFixed(2)} / day`;
+  const dec = habitDecimals(habit);
+  return `${formatNumberWithDecimals(avg, dec)} ${habit.unit || ""}`.trim();
+}
+
+function formatStatBest(habit, best) {
+  if (habit.type === "checkbox") return "";
+  if (best === null || best === undefined) return "";
+  const dec = habitDecimals(habit);
+  return `${formatNumberWithDecimals(best, dec)} ${habit.unit || ""}`.trim();
+}
+
+function MiniStat({ label, value }) {
+  return (
+    <div className="rounded-2xl bg-background/60 shadow-sm p-3">
+      <div className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+        {label}
+      </div>
+      <div className="mt-1 text-lg font-semibold tabular-nums tracking-tight">{value || ""}</div>
+    </div>
+  );
+}
+
+// Custom glass styled tooltip for Recharts Trend chart
+function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const title = labelFormatter ? labelFormatter(label) : String(label ?? "");
+
+  return (
+    <div className="pointer-events-none max-w-[220px] rounded-2xl bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm px-3 py-2">
+      <div className="text-xs font-medium text-foreground/90">{title}</div>
+      <div className="mt-1 space-y-1">
+        {[...payload]
+          .filter((p) => p && p.value !== null && p.value !== undefined)
+          .sort((a, b) => {
+            const order = (k) => (k === "actualCum" ? 0 : k === "goalCum" ? 1 : 2);
+            return order(a.dataKey) - order(b.dataKey);
+          })
+          .map((p) => {
+            const name = p.dataKey || p.name;
+            const res = formatter ? formatter(p.value, name, p, payload) : [String(p.value), String(name)];
+            const valueText = Array.isArray(res) ? res[0] : String(res);
+            const labelText = Array.isArray(res) ? res[1] : String(name);
+
+            return (
+              <div key={String(name)} className="flex items-center justify-between gap-4 text-xs">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span className="h-2 w-2 rounded-full" style={{ background: p.color || "currentColor" }} />
+                  <span>{labelText}</span>
+                </div>
+                <span className="tabular-nums text-foreground">{valueText}</span>
+              </div>
+            );
+          })}
+      </div>
+    </div>
+  );
+}
+
+
+// =====================
+// Main component
+// =====================
 export default function HabitTrackerMVP() {
   const [session, setSession] = useState(null);
   const [cloudReady, setCloudReady] = useState(false);
@@ -348,7 +503,8 @@ export default function HabitTrackerMVP() {
   const [historyMonth, setHistoryMonth] = useState("all");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
-
+  const [focusedHabitId, setFocusedHabitId] = useState(() => state.habits[0]?.id || "");
+  const [draggingHabitId, setDraggingHabitId] = useState("");
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data?.session || null));
 
@@ -364,7 +520,206 @@ export default function HabitTrackerMVP() {
   }, [state]);
 
   const yearOptions = useMemo(() => buildYearOptions(), []);
+
+  const handleYearChange = useCallback((v) => {
+    setState((s) => ({ ...s, ui: { ...s.ui, selectedYear: Number(v) } }));
+  }, []);
+
+  const exportJSON = useCallback(() => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `habit_tracker_${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }, [state]);
+
+  const handleExport = useCallback(() => {
+    exportJSON();
+  }, [exportJSON]);
+
+  const handleSignOut = useCallback(() => {
+    supabase.auth.signOut();
+  }, []);
+
+  const handleMobileExport = useCallback(() => {
+    exportJSON();
+    setMobileMenuOpen(false);
+  }, [exportJSON]);
+
+  const handleMobileSignOut = useCallback(() => {
+    setMobileMenuOpen(false);
+    supabase.auth.signOut();
+  }, []);
+
+  const handleActiveDateChange = useCallback((e) => {
+    setActiveDate(e.target.value);
+  }, []);
+
   const selectedYear = state.ui.selectedYear;
+
+  const updateHabit = useCallback(
+    async (habitId, patch) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      let merged = null;
+
+      setState((s) => {
+        const current = (s.habits || []).find((h) => h.id === habitId);
+        merged = { ...(current || {}), ...(patch || {}), id: habitId };
+        const nextHabits = (s.habits || []).map((h) => (h.id === habitId ? { ...h, ...patch } : h));
+        return { ...s, habits: nextHabits };
+      });
+
+      if (!merged) return;
+
+      const row = {
+        name: merged.name,
+        unit: merged.type === "number" ? (merged.unit ?? null) : null,
+        decimals: merged.type === "number" ? Number(merged.decimals ?? 0) : 0,
+        goal_daily: Number(merged.goalDaily ?? 0),
+        goal_period: merged.goalPeriod || "daily",
+      };
+
+      const res = await supabase
+        .from("habits")
+        .update(row)
+        .eq("user_id", userId)
+        .eq("id", habitId);
+
+      if (res.error) setCloudError(res.error.message || "Failed to update habit");
+    },
+    [session?.user?.id]
+  );
+
+  const addHabit = useCallback(
+    async (newHabit) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      let sortIndex = 0;
+
+      setState((s) => {
+        sortIndex = (s.habits || []).length;
+        return { ...s, habits: [...(s.habits || []), newHabit] };
+      });
+
+      const row = habitToInsertRow(newHabit, userId, sortIndex);
+
+      const res = await supabase.from("habits").insert(row);
+      if (res.error) setCloudError(res.error.message || "Failed to add habit");
+    },
+    [session?.user?.id]
+  );
+
+  const deleteHabit = useCallback(
+    async (habitId) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      setState((s) => {
+        const habitsNext = (s.habits || []).filter((h) => h.id !== habitId);
+        let entriesNext = s.entries;
+        for (const d of Object.keys(entriesNext || {})) {
+          if (entriesNext[d]?.[habitId]) {
+            entriesNext = deleteEntry(entriesNext, d, habitId);
+          }
+        }
+        return { ...s, habits: habitsNext, entries: entriesNext };
+      });
+
+      const res = await supabase
+        .from("habits")
+        .delete()
+        .eq("user_id", userId)
+        .eq("id", habitId);
+
+      if (res.error) setCloudError(res.error.message || "Failed to delete habit");
+    },
+    [session?.user?.id]
+  );
+
+  const logValue = useCallback(
+    async (dateISO, habit, value) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      // optimistic local
+      setState((s) => {
+        const payload = { value };
+        const entriesNext = setEntry(s.entries, dateISO, habit.id, payload);
+
+        if (habit?.type === "number") {
+          const detected = Math.min(6, Math.max(0, countDecimalsFromValue(value)));
+          const nextHabits = (s.habits || []).map((h) => {
+            if (h.id !== habit.id) return h;
+            const current = Number.isFinite(Number(h.decimals)) ? Number(h.decimals) : 0;
+            const nextDec = Math.max(current, detected);
+            return nextDec === current ? h : { ...h, decimals: nextDec };
+          });
+          return { ...s, entries: entriesNext, habits: nextHabits };
+        }
+
+        return { ...s, entries: entriesNext };
+      });
+
+      const entryRow = {
+        user_id: userId,
+        date_iso: dateISO,
+        habit_id: habit.id,
+        value: { value },
+        updated_at: new Date().toISOString(),
+      };
+
+      const res = await supabase
+        .from("entries")
+        .upsert(entryRow, { onConflict: "user_id,date_iso,habit_id" });
+
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to save entry");
+        return;
+      }
+
+      // persist decimals upgrade if needed
+      if (habit?.type === "number") {
+        const detected = Math.min(6, Math.max(0, countDecimalsFromValue(value)));
+        const current = Number.isFinite(Number(habit.decimals)) ? Number(habit.decimals) : 0;
+        const nextDec = Math.max(current, detected);
+        if (nextDec !== current) {
+          const upd = await supabase
+            .from("habits")
+            .update({ decimals: nextDec })
+            .eq("user_id", userId)
+            .eq("id", habit.id);
+          if (upd.error) setCloudError(upd.error.message || "Failed to update decimals");
+        }
+      }
+    },
+    [session?.user?.id]
+  );
+
+  const removeLog = useCallback(
+    async (dateISO, habitId) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      setState((s) => ({ ...s, entries: deleteEntry(s.entries, dateISO, habitId) }));
+
+      const res = await supabase
+        .from("entries")
+        .delete()
+        .eq("user_id", userId)
+        .eq("date_iso", dateISO)
+        .eq("habit_id", habitId);
+
+      if (res.error) setCloudError(res.error.message || "Failed to remove entry");
+    },
+    [session?.user?.id]
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -375,44 +730,19 @@ export default function HabitTrackerMVP() {
       setCloudReady(false);
 
       const userId = session.user.id;
-      const { start, end } = isoRangeForYear(selectedYear);
 
-      const habitsRes = await supabase
-        .from("habits")
-        .select("id,name,type,unit,decimals,goal_daily,goal_period,sort_index,created_at")
-        .eq("user_id", userId)
-        .order("sort_index", { ascending: true })
-        .order("created_at", { ascending: true });
+      try {
+        const { habitsNext, entriesNext } = await loadCloudForYear({ userId, year: selectedYear });
 
-      if (habitsRes.error) {
         if (!cancelled) {
-          setCloudError(habitsRes.error.message || "Failed to load habits");
+          setState((s) => ensureStateShape({ ...s, habits: habitsNext, entries: entriesNext }));
           setCloudReady(true);
         }
-        return;
-      }
-
-      const entriesRes = await supabase
-        .from("entries")
-        .select("user_id,date_iso,habit_id,value")
-        .eq("user_id", userId)
-        .gte("date_iso", start)
-        .lte("date_iso", end);
-
-      if (entriesRes.error) {
+      } catch (err) {
         if (!cancelled) {
-          setCloudError(entriesRes.error.message || "Failed to load entries");
+          setCloudError(err?.message || "Failed to load cloud data");
           setCloudReady(true);
         }
-        return;
-      }
-
-      const habitsNext = (habitsRes.data || []).map(habitFromRow);
-      const entriesNext = entriesFromRows(entriesRes.data || []);
-
-      if (!cancelled) {
-        setState((s) => ensureStateShape({ ...s, habits: habitsNext, entries: entriesNext }));
-        setCloudReady(true);
       }
     }
 
@@ -426,54 +756,38 @@ export default function HabitTrackerMVP() {
     return state.habits || [];
   }, [state.habits]);
 
-  async function persistHabitOrder(list) {
-    const userId = session?.user?.id;
-    if (!userId) return;
+  const persistHabitOrder = useCallback(
+    async (list) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
 
-    const updates = (list || []).map((h, idx) => ({
-      id: h.id,
-      user_id: userId,
-      sort_index: idx,
-    }));
+      const updates = (list || []).map((h, idx) => ({
+        id: h.id,
+        user_id: userId,
+        sort_index: idx,
+      }));
 
-    const res = await supabase.from("habits").upsert(updates, { onConflict: "id" });
-    if (res.error) setCloudError(res.error.message || "Failed to save order");
-  }
-
-
+      const res = await supabase.from("habits").upsert(updates, { onConflict: "id" });
+      if (res.error) setCloudError(res.error.message || "Failed to save order");
+    },
+    [session?.user?.id]
+  );
   // Touch drag reorder handlers for mobile
   const [touchDragging, setTouchDragging] = useState(false);
+  const pendingOrderRef = useRef(null);
 
-  function getHabitIdFromEventTarget(el) {
+  const getHabitIdFromEventTarget = useCallback((el) => {
     const node = el?.closest?.("[data-habit-id]");
     return node?.getAttribute?.("data-habit-id") || "";
-  }
+  }, []);
 
-  function onTouchDragStart(habitId) {
+  const onTouchDragStart = useCallback((habitId) => {
     setDraggingHabitId(habitId);
     setTouchDragging(true);
-  }
+  }, []);
 
-  async function onTouchDragMove(clientX, clientY) {
-    if (!draggingHabitId) return;
-    const el = document.elementFromPoint(clientX, clientY);
-    const overId = getHabitIdFromEventTarget(el);
-    if (!overId || overId === draggingHabitId) return;
-    // reorder immediately for a responsive feel
-    await reorderHabits(draggingHabitId, overId);
-    // keep dragging the same habit id
-    setDraggingHabitId(draggingHabitId);
-  }
-
-  function onTouchDragEnd() {
-    setTouchDragging(false);
-    setDraggingHabitId("");
-  }
-
-  async function reorderHabits(fromId, toId) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    if (!fromId || !toId || fromId === toId) return;
+  const reorderHabitsLocal = useCallback((fromId, toId) => {
+    if (!fromId || !toId || fromId === toId) return null;
 
     let nextList = null;
     setState((s) => {
@@ -489,8 +803,167 @@ export default function HabitTrackerMVP() {
       return { ...s, habits: list };
     });
 
-    await persistHabitOrder(nextList);
-  }
+    return nextList;
+  }, []);
+
+  const reorderHabits = useCallback(
+    async (fromId, toId) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      const nextList = reorderHabitsLocal(fromId, toId);
+      if (!nextList) return;
+
+      await persistHabitOrder(nextList);
+    },
+    [persistHabitOrder, reorderHabitsLocal, session?.user?.id]
+  );
+
+  const onTouchDragMove = useCallback(
+    async (clientX, clientY) => {
+      if (!draggingHabitId) return;
+      const el = document.elementFromPoint(clientX, clientY);
+      const overId = getHabitIdFromEventTarget(el);
+      if (!overId || overId === draggingHabitId) return;
+
+      const nextList = reorderHabitsLocal(draggingHabitId, overId);
+      if (nextList) pendingOrderRef.current = nextList;
+    },
+    [draggingHabitId, getHabitIdFromEventTarget, reorderHabitsLocal]
+  );
+
+  const onTouchDragEnd = useCallback(async () => {
+    const nextList = pendingOrderRef.current;
+    pendingOrderRef.current = null;
+
+    setTouchDragging(false);
+    setDraggingHabitId("");
+
+    if (nextList) {
+      await persistHabitOrder(nextList);
+    }
+  }, [persistHabitOrder]);
+  // Desktop drag reorder
+  const handleDragStart = useCallback((habitId, e) => {
+    e.dataTransfer.setData("text/plain", habitId);
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingHabitId(habitId);
+  }, []);
+
+  const handleDragOver = useCallback((_habitId, e) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  }, []);
+
+  const handleDrop = useCallback(
+    (toHabitId, e) => {
+      e.preventDefault();
+      const fromId = e.dataTransfer.getData("text/plain");
+      reorderHabits(fromId, toHabitId);
+      setDraggingHabitId("");
+    },
+    [reorderHabits]
+  );
+
+  const handleDragEnd = useCallback(() => {
+    setDraggingHabitId("");
+  }, []);
+
+  const handleTouchStart = useCallback(
+    (habitId) => {
+      onTouchDragStart(habitId);
+    },
+    [onTouchDragStart]
+  );
+
+  const handleTouchMove = useCallback((x, y) => {
+    onTouchDragMove(x, y);
+  }, [onTouchDragMove]);
+
+  const handleTouchEnd = useCallback(() => {
+    onTouchDragEnd();
+  }, [onTouchDragEnd]);
+
+  const handleLogForHabit = useCallback(
+    (habit, value) => {
+      logValue(activeDate, habit, value);
+    },
+    [activeDate, logValue]
+  );
+
+  const handleDeleteHabitById = useCallback(
+    (habitId) => {
+      deleteHabit(habitId);
+    },
+    [deleteHabit]
+  );
+
+  const handleEditHabitById = useCallback(
+    (habitId, patch) => {
+      updateHabit(habitId, patch);
+    },
+    [updateHabit]
+  );
+
+  const handleTouchStartForId = useCallback(
+    (habitId) => {
+      handleTouchStart(habitId);
+    },
+    [handleTouchStart]
+  );
+
+  const getHabitDnDProps = useCallback(
+    (habitId) => {
+      if (isMobile) {
+        return {
+          dragging: draggingHabitId === habitId,
+          onDragStart: undefined,
+          onDragOver: undefined,
+          onDrop: undefined,
+          onDragEnd: undefined,
+          onTouchStartDrag: () => handleTouchStartForId(habitId),
+          onTouchMoveDrag: handleTouchMove,
+          onTouchEndDrag: handleTouchEnd,
+          touchDragging,
+        };
+      }
+
+      return {
+        dragging: draggingHabitId === habitId,
+        onDragStart: (e) => handleDragStart(habitId, e),
+        onDragOver: (e) => handleDragOver(habitId, e),
+        onDrop: (e) => handleDrop(habitId, e),
+        onDragEnd: handleDragEnd,
+        onTouchStartDrag: undefined,
+        onTouchMoveDrag: undefined,
+        onTouchEndDrag: undefined,
+        touchDragging,
+      };
+    },
+    [
+      draggingHabitId,
+      handleDragEnd,
+      handleDragOver,
+      handleDragStart,
+      handleDrop,
+      handleTouchEnd,
+      handleTouchMove,
+      handleTouchStartForId,
+      isMobile,
+      touchDragging,
+    ]
+  );
+
+  const getHabitRowHandlers = useCallback(
+    (habit) => {
+      return {
+        onLog: (value) => handleLogForHabit(habit, value),
+        onDelete: () => handleDeleteHabitById(habit.id),
+        onEditHabit: (patch) => handleEditHabitById(habit.id, patch),
+      };
+    },
+    [handleDeleteHabitById, handleEditHabitById, handleLogForHabit]
+  );
 
   const datesInYear = useMemo(() => listDatesInYear(state.entries, selectedYear), [state.entries, selectedYear]);
 
@@ -499,157 +972,6 @@ export default function HabitTrackerMVP() {
       ? datesInYear
       : datesInYear.filter((d) => monthFromISO(d) === historyMonth);
   }, [datesInYear, historyMonth]);
-
-  async function updateHabit(habitId, patch) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    setState((s) => {
-      const nextHabits = (s.habits || []).map((h) => (h.id === habitId ? { ...h, ...patch } : h));
-      return { ...s, habits: nextHabits };
-    });
-
-    const current = (state.habits || []).find((h) => h.id === habitId);
-    const merged = { ...(current || {}), ...(patch || {}), id: habitId };
-
-    const row = {
-      name: merged.name,
-      unit: merged.type === "number" ? (merged.unit ?? null) : null,
-      decimals: merged.type === "number" ? Number(merged.decimals ?? 0) : 0,
-      goal_daily: Number(merged.goalDaily ?? 0),
-      goal_period: merged.goalPeriod || "daily",
-    };
-
-    const res = await supabase
-      .from("habits")
-      .update(row)
-      .eq("user_id", userId)
-      .eq("id", habitId);
-
-    if (res.error) setCloudError(res.error.message || "Failed to update habit");
-  }
-
-  async function addHabit(newHabit) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    setState((s) => ({ ...s, habits: [...(s.habits || []), newHabit] }));
-
-    const sortIndex = (state.habits || []).length;
-    const row = habitToInsertRow(newHabit, userId, sortIndex);
-
-    const res = await supabase.from("habits").insert(row);
-    if (res.error) setCloudError(res.error.message || "Failed to add habit");
-  }
-
-  async function deleteHabit(habitId) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    setState((s) => {
-      const habitsNext = (s.habits || []).filter((h) => h.id !== habitId);
-      let entriesNext = s.entries;
-      for (const d of Object.keys(entriesNext || {})) {
-        if (entriesNext[d]?.[habitId]) {
-          entriesNext = deleteEntry(entriesNext, d, habitId);
-        }
-      }
-      return { ...s, habits: habitsNext, entries: entriesNext };
-    });
-
-    const res = await supabase
-      .from("habits")
-      .delete()
-      .eq("user_id", userId)
-      .eq("id", habitId);
-
-    if (res.error) setCloudError(res.error.message || "Failed to delete habit");
-  }
-
-  async function logValue(dateISO, habit, value) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    // optimistic local
-    setState((s) => {
-      const payload = { value };
-      const entriesNext = setEntry(s.entries, dateISO, habit.id, payload);
-
-      if (habit?.type === "number") {
-        const detected = Math.min(6, Math.max(0, countDecimalsFromValue(value)));
-        const nextHabits = (s.habits || []).map((h) => {
-          if (h.id !== habit.id) return h;
-          const current = Number.isFinite(Number(h.decimals)) ? Number(h.decimals) : 0;
-          const nextDec = Math.max(current, detected);
-          return nextDec === current ? h : { ...h, decimals: nextDec };
-        });
-        return { ...s, entries: entriesNext, habits: nextHabits };
-      }
-
-      return { ...s, entries: entriesNext };
-    });
-
-    const entryRow = {
-      user_id: userId,
-      date_iso: dateISO,
-      habit_id: habit.id,
-      value: { value },
-      updated_at: new Date().toISOString(),
-    };
-
-    const res = await supabase
-      .from("entries")
-      .upsert(entryRow, { onConflict: "user_id,date_iso,habit_id" });
-
-    if (res.error) {
-      setCloudError(res.error.message || "Failed to save entry");
-      return;
-    }
-
-    // persist decimals upgrade if needed
-    if (habit?.type === "number") {
-      const detected = Math.min(6, Math.max(0, countDecimalsFromValue(value)));
-      const current = Number.isFinite(Number(habit.decimals)) ? Number(habit.decimals) : 0;
-      const nextDec = Math.max(current, detected);
-      if (nextDec !== current) {
-        const upd = await supabase
-          .from("habits")
-          .update({ decimals: nextDec })
-          .eq("user_id", userId)
-          .eq("id", habit.id);
-        if (upd.error) setCloudError(upd.error.message || "Failed to update decimals");
-      }
-    }
-  }
-
-  async function removeLog(dateISO, habitId) {
-    const userId = session?.user?.id;
-    if (!userId) return;
-
-    setState((s) => ({ ...s, entries: deleteEntry(s.entries, dateISO, habitId) }));
-
-    const res = await supabase
-      .from("entries")
-      .delete()
-      .eq("user_id", userId)
-      .eq("date_iso", dateISO)
-      .eq("habit_id", habitId);
-
-    if (res.error) setCloudError(res.error.message || "Failed to remove entry");
-  }
-
-  function exportJSON() {
-    const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `habit_tracker_${todayISO()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
 
   const yearSummary = useMemo(() => {
     const activeHabits = state.habits;
@@ -661,16 +983,13 @@ export default function HabitTrackerMVP() {
     return out;
   }, [state.habits, state.entries, selectedYear]);
 
-  const [focusedHabitId, setFocusedHabitId] = useState(() => state.habits[0]?.id || "");
-  const [draggingHabitId, setDraggingHabitId] = useState("");
+  // Removed effect to set focusedHabitId to avoid setState in effect.
 
-  useEffect(() => {
-    if (!focusedHabitId && state.habits[0]?.id) setFocusedHabitId(state.habits[0].id);
-  }, [focusedHabitId, state.habits]);
+  const effectiveFocusedHabitId = focusedHabitId || state.habits[0]?.id || "";
 
   const focusedHabit = useMemo(
-    () => state.habits.find((h) => h.id === focusedHabitId) || state.habits[0],
-    [state.habits, focusedHabitId]
+    () => state.habits.find((h) => h.id === effectiveFocusedHabitId) || state.habits[0],
+    [state.habits, effectiveFocusedHabitId]
   );
 
   const focusedSeries = useMemo(() => {
@@ -678,15 +997,29 @@ export default function HabitTrackerMVP() {
     return buildHabitSeries(focusedHabit, state.entries, selectedYear);
   }, [focusedHabit, state.entries, selectedYear]);
 
+  const focusedStats = useMemo(() => {
+    if (!focusedHabit) return null;
+    return habitStats(focusedHabit, state.entries, selectedYear);
+  }, [focusedHabit, state.entries, selectedYear]);
+
   if (!session) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen w-full bg-background text-foreground">
+    <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/15 text-foreground text-[15px] font-sans antialiased">
       <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
-        <header className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+        <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-3 py-3 shadow-sm">
           <div className="space-y-1">
             <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker</h1>
-            <div className="text-xs text-muted-foreground">
+            <div
+              className={
+                "inline-flex items-center rounded-full px-2.5 py-1 text-xs shadow-sm bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 " +
+                (cloudError
+                  ? "bg-destructive/10 text-destructive"
+                  : cloudReady
+                    ? "bg-muted/30 text-foreground"
+                    : "bg-muted/30 text-muted-foreground")
+              }
+            >
               {cloudError ? `Cloud error: ${cloudError}` : cloudReady ? "Synced" : "Loading cloud..."}
             </div>
           </div>
@@ -697,11 +1030,9 @@ export default function HabitTrackerMVP() {
               <Label className="text-xs text-muted-foreground">Year</Label>
               <Select
                 value={String(selectedYear)}
-                onValueChange={(v) =>
-                  setState((s) => ({ ...s, ui: { ...s.ui, selectedYear: Number(v) } }))
-                }
+                onValueChange={handleYearChange}
               >
-                <SelectTrigger className="w-[120px]">
+                <SelectTrigger className="w-[120px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -715,10 +1046,10 @@ export default function HabitTrackerMVP() {
             </div>
 
             <div className="flex items-center gap-2">
-              <Button onClick={exportJSON} className="gap-2">
+              <Button onClick={handleExport} variant="secondary" className="gap-2">
                 <Download className="h-4 w-4" /> Export
               </Button>
-              <Button variant="outline" onClick={() => supabase.auth.signOut()}>
+              <Button variant="ghost" onClick={handleSignOut}>
                 Sign out
               </Button>
             </div>
@@ -728,7 +1059,7 @@ export default function HabitTrackerMVP() {
           <div className="md:hidden absolute top-0 right-0">
             <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <DialogTrigger asChild>
-                <Button variant="outline" className="h-9 w-9 px-0" aria-label="More">
+                <Button variant="ghost" className="h-9 w-9 px-0" aria-label="More">
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
@@ -742,11 +1073,9 @@ export default function HabitTrackerMVP() {
                     <Label className="text-sm text-muted-foreground">Year</Label>
                     <Select
                       value={String(selectedYear)}
-                      onValueChange={(v) =>
-                        setState((s) => ({ ...s, ui: { ...s.ui, selectedYear: Number(v) } }))
-                      }
+                      onValueChange={handleYearChange}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -760,16 +1089,10 @@ export default function HabitTrackerMVP() {
                   </div>
 
                   <div className="grid gap-2">
-                    <Button onClick={() => { exportJSON(); setMobileMenuOpen(false); }} className="gap-2">
+                    <Button onClick={handleMobileExport} variant="secondary" className="gap-2">
                       <Download className="h-4 w-4" /> Export
                     </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        supabase.auth.signOut();
-                      }}
-                    >
+                    <Button variant="ghost" onClick={handleMobileSignOut}>
                       Sign out
                     </Button>
                   </div>
@@ -780,17 +1103,32 @@ export default function HabitTrackerMVP() {
         </header>
 
         <Tabs defaultValue="log" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="log">Daily Log</TabsTrigger>
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 rounded-2xl bg-muted/40 p-1.5 shadow-sm">
+            <TabsTrigger
+              value="log"
+              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+            >
+              Daily Log
+            </TabsTrigger>
+            <TabsTrigger
+              value="dashboard"
+              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+            >
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger
+              value="history"
+              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+            >
+              History
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="log" className="space-y-4">
-            <Card className="rounded-2xl shadow-sm">
+            <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm transition-shadow hover:shadow-md">
               <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div className="space-y-1">
-                  <CardTitle>Daily Log</CardTitle>
+                  <CardTitle className="whitespace-nowrap text-base font-semibold tracking-tight">Daily Log</CardTitle>
                 </div>
                 <div className="flex flex-row items-center justify-start md:justify-end gap-3 md:gap-6 w-full">
                   <div className="flex items-center gap-2 md:order-2">
@@ -798,63 +1136,31 @@ export default function HabitTrackerMVP() {
                     <Input
                       type="date"
                       value={activeDate}
-                      onChange={(e) => setActiveDate(e.target.value)}
-                      className="w-[160px] md:w-[160px]"
+                      onChange={handleActiveDateChange}
+                      className="w-[160px] md:w-[160px] rounded-2xl bg-background/60 shadow-sm border-0 focus-visible:ring-2 focus-visible:ring-muted/30"
                     />
                   </div>
                   <div className="md:order-1 shrink-0">
-                    <AddHabitDialog onAdd={addHabit} />
+                    <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
                   </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-
                 <div className="grid gap-3">
                   {habits.length === 0 ? (
                     <div className="text-sm text-muted-foreground">No habits yet. Add one.</div>
                   ) : (
-                    habits.map((h, idx) => (
+                    habits.map((h) => (
                       <HabitLogRow
-                        key={h.id}
+                        key={`${h.id}-${activeDate}`}
                         habit={h}
                         entry={getEntry(state.entries, activeDate, h.id)}
-                        onLog={(value) => logValue(activeDate, h, value)}
-                        onDelete={() => deleteHabit(h.id)}
-                        onEditHabit={(patch) => updateHabit(h.id, patch)}
-                        dragging={draggingHabitId === h.id}
-                        onDragStart={
-                          isMobile
-                            ? undefined
-                            : (e) => {
-                                e.dataTransfer.setData("text/plain", h.id);
-                                e.dataTransfer.effectAllowed = "move";
-                                setDraggingHabitId(h.id);
-                              }
-                        }
-                        onDragOver={
-                          isMobile
-                            ? undefined
-                            : (e) => {
-                                e.preventDefault();
-                                e.dataTransfer.dropEffect = "move";
-                              }
-                        }
-                        onDrop={
-                          isMobile
-                            ? undefined
-                            : (e) => {
-                                e.preventDefault();
-                                const fromId = e.dataTransfer.getData("text/plain");
-                                reorderHabits(fromId, h.id);
-                                setDraggingHabitId("");
-                              }
-                        }
-                        onDragEnd={isMobile ? undefined : () => setDraggingHabitId("")}
                         isMobile={isMobile}
-                        onTouchStartDrag={() => onTouchDragStart(h.id)}
-                        onTouchMoveDrag={(x, y) => onTouchDragMove(x, y)}
-                        onTouchEndDrag={() => onTouchDragEnd()}
-                        touchDragging={touchDragging}
+                        {...getHabitRowHandlers(h)}
+                        {...getHabitDnDProps(h.id)}
+                        clampNumber={clampNumber}
+                        habitDecimals={habitDecimals}
+                        formatNumberWithDecimals={formatNumberWithDecimals}
                       />
                     ))
                   )}
@@ -864,10 +1170,10 @@ export default function HabitTrackerMVP() {
           </TabsContent>
 
           <TabsContent value="dashboard" className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="rounded-2xl shadow-sm">
+            <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+              <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
                 <CardHeader>
-                  <CardTitle>Year Summary</CardTitle>
+                  <CardTitle className="text-base font-semibold tracking-tight">Year Summary</CardTitle>
                   <p className="text-sm text-muted-foreground">Totals for {selectedYear}.</p>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -879,8 +1185,8 @@ export default function HabitTrackerMVP() {
                         <button
                           key={habit.id}
                           onClick={() => setFocusedHabitId(habit.id)}
-                          className={`w-full text-left rounded-2xl border p-3 hover:bg-accent/40 transition ${
-                            focusedHabitId === habit.id ? "bg-accent/30" : ""
+                          className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+                            effectiveFocusedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
                           }`}
                         >
                           <div className="flex items-center justify-between gap-2">
@@ -901,9 +1207,9 @@ export default function HabitTrackerMVP() {
                 </CardContent>
               </Card>
 
-              <Card className="rounded-2xl shadow-sm">
+              <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
                 <CardHeader>
-                  <CardTitle>Trend</CardTitle>
+                  <CardTitle className="text-base font-semibold tracking-tight">Trend</CardTitle>
                   <p className="text-sm text-muted-foreground">
                     {focusedHabit ? `Showing: ${focusedHabit.name}` : "Pick a habit"}
                   </p>
@@ -911,32 +1217,48 @@ export default function HabitTrackerMVP() {
                 <CardContent className="space-y-3">
                   {focusedHabit ? (
                     <>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                        {(() => {
-                          const st = habitStats(focusedHabit, state.entries, selectedYear);
-                          return (
-                            <>
-                              <MiniStat label="Total" value={formatStatTotal(focusedHabit, st.total)} />
-                              <MiniStat label="Avg logged" value={formatStatAvg(focusedHabit, st.avgPerLoggedDay)} />
-                              <MiniStat label="Avg 7d" value={formatStatAvg(focusedHabit, st.avgLast7)} />
-                              <MiniStat label="Best day" value={formatStatBest(focusedHabit, st.best)} />
-                            </>
-                          );
-                        })()}
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+                        <MiniStat
+                          label="Total"
+                          value={focusedStats ? formatStatTotal(focusedHabit, focusedStats.total) : ""}
+                        />
+                        <MiniStat
+                          label="Avg logged"
+                          value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgPerLoggedDay) : ""}
+                        />
+                        <MiniStat
+                          label="Avg 7d"
+                          value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgLast7) : ""}
+                        />
+                        <MiniStat
+                          label="Best day"
+                          value={focusedStats ? formatStatBest(focusedHabit, focusedStats.best) : ""}
+                        />
                       </div>
 
-                      <div className="h-[260px] w-full">
+                      <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
                         {focusedSeries.length === 0 ? (
-                          <div className="h-full rounded-2xl border flex items-center justify-center text-sm text-muted-foreground">
+                          <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
                             No data yet for this habit in {selectedYear}.
                           </div>
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                              <CartesianGrid strokeDasharray="3 3" />
-                              <XAxis dataKey="date" tick={{ fontSize: 12 }} minTickGap={18} />
+                              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
+                              <XAxis
+                                dataKey="date"
+                                tick={{ fontSize: 12, fontFamily: "inherit" }}
+                                tickFormatter={formatAxisDate}
+                                interval="preserveStartEnd"
+                                minTickGap={60}
+                                tickMargin={8}
+                                axisLine={false}
+                                tickLine={false}
+                              />
                               <YAxis
-                                tick={{ fontSize: 12 }}
+                                tick={{ fontSize: 12, fontFamily: "inherit" }}
+                                axisLine={false}
+                                tickLine={false}
                                 tickFormatter={(v) =>
                                   focusedHabit.type === "checkbox"
                                     ? String(v)
@@ -944,18 +1266,19 @@ export default function HabitTrackerMVP() {
                                 }
                               />
                               <Tooltip
+                                content={<GlassTooltip />}
                                 labelFormatter={(l) => formatPrettyDate(l)}
                                 formatter={(v, name) => {
                                   if (v === null || v === undefined) return ["", ""];
 
                                   if (focusedHabit.type === "checkbox") {
-                                    const label = name === "goalCum" ? "Goal" : "Actual";
-                                    return [String(Math.round(Number(v))), label];
+                                    const labelText = name === "goalCum" ? "Goal" : "Actual";
+                                    return [String(Math.round(Number(v))), labelText];
                                   }
 
                                   const dec = habitDecimals(focusedHabit);
-                                  const label = name === "goalCum" ? "Goal" : "Actual";
-                                  return [formatNumberWithDecimals(v, dec), label];
+                                  const labelText = name === "goalCum" ? "Goal" : "Actual";
+                                  return [formatNumberWithDecimals(v, dec), labelText];
                                 }}
                               />
                               <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
@@ -978,14 +1301,14 @@ export default function HabitTrackerMVP() {
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4">
-            <Card className="rounded-2xl shadow-sm">
+            <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
               <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
                 <div>
-                  <CardTitle>History</CardTitle>
+                  <CardTitle className="text-base font-semibold tracking-tight">History</CardTitle>
                 </div>
                 <div className="flex items-center gap-2">
                   <Select value={historyMonth} onValueChange={setHistoryMonth}>
-                    <SelectTrigger className="w-[140px]">
+                    <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
                       <SelectValue placeholder="Month" />
                     </SelectTrigger>
                     <SelectContent>
@@ -1006,11 +1329,11 @@ export default function HabitTrackerMVP() {
                   </Select>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 pt-4">
                 {filteredHistory.length === 0 ? (
                   <div className="text-sm text-muted-foreground">No matching days found.</div>
                 ) : (
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {filteredHistory.map((d) => (
                       <HistoryDay
                         key={d}
@@ -1018,6 +1341,8 @@ export default function HabitTrackerMVP() {
                         dayEntries={state.entries[d]}
                         habits={state.habits}
                         onDeleteOne={(habitId) => removeLog(d, habitId)}
+                        formatPrettyDate={formatPrettyDate}
+                        entryToDisplay={entryToDisplay}
                       />
                     ))}
                   </div>
@@ -1031,604 +1356,3 @@ export default function HabitTrackerMVP() {
   );
 }
 
-function formatStatTotal(habit, total) {
-  if (habit.type === "checkbox") return `${Math.round(total)} days`;
-  const dec = habitDecimals(habit);
-  return `${formatNumberWithDecimals(total, dec)} ${habit.unit || ""}`.trim();
-}
-
-function formatStatAvg(habit, avg) {
-  if (habit.type === "checkbox") return `${avg.toFixed(2)} / day`;
-  const dec = habitDecimals(habit);
-  return `${formatNumberWithDecimals(avg, dec)} ${habit.unit || ""}`.trim();
-}
-
-function formatStatBest(habit, best) {
-  if (habit.type === "checkbox") return "";
-  if (best === null || best === undefined) return "";
-  const dec = habitDecimals(habit);
-  return `${formatNumberWithDecimals(best, dec)} ${habit.unit || ""}`.trim();
-}
-
-function MiniStat({ label, value }) {
-  return (
-    <div className="rounded-2xl border p-3">
-      <div className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
-        {label}
-      </div>
-      <div className="mt-1 text-base font-semibold tabular-nums">{value || ""}</div>
-    </div>
-  );
-}
-
-function LoginScreen() {
-  const [email, setEmail] = useState("");
-  const [sent, setSent] = useState(false);
-
-  async function sendLink() {
-    const clean = email.trim();
-    if (!clean) return;
-
-    const { error } = await supabase.auth.signInWithOtp({
-      email: clean,
-      options: { emailRedirectTo: window.location.origin },
-    });
-
-    if (error) return alert(error.message);
-    setSent(true);
-  }
-
-  return (
-    <div className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border p-4 space-y-3">
-        <div className="text-lg font-semibold">Sign in</div>
-        <div className="text-sm text-muted-foreground">
-          {sent ? "Check your email for the login link." : "Enter your email to get a magic link."}
-        </div>
-        <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-        <Button className="w-full" onClick={sendLink} disabled={!email.trim()}>
-          Send link
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-function AddHabitDialog({ onAdd }) {
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [type, setType] = useState("number");
-  const [unit, setUnit] = useState("reps");
-  const [goalDaily, setGoalDaily] = useState("");
-  const [goalPeriod, setGoalPeriod] = useState("daily");
-  const [goalEnabled, setGoalEnabled] = useState(false);
-
-  function reset() {
-    setName("");
-    setType("number");
-    setUnit("reps");
-    setGoalDaily("");
-    setGoalPeriod("daily");
-    setGoalEnabled(false);
-  }
-
-  function create() {
-    const cleanName = name.trim();
-    if (!cleanName) return;
-    const h = {
-      id: uuid(),
-      name: cleanName,
-      unit: type === "number" ? unit.trim() || "value" : undefined,
-      type,
-      goalDaily: goalEnabled && goalDaily !== "" ? clampNumber(goalDaily) : 0,
-      goalPeriod,
-    };
-    onAdd(h);
-    setOpen(false);
-    reset();
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          <Plus className="h-4 w-4" /> Add Habit
-        </Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Add a habit</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-4">
-          <div className="grid md:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-
-            <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Type</Label>
-              <Select value={type} onValueChange={(v) => setType(v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="number">Number</SelectItem>
-                  <SelectItem value="checkbox">Checkbox</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {type === "number" ? (
-            <div className="grid md:grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label className="text-sm text-muted-foreground">Unit</Label>
-                <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
-              </div>
-
-              <div className="grid gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <Label className="text-sm text-muted-foreground">Goal</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Set a goal</span>
-                    <Switch
-                      checked={goalEnabled}
-                      onCheckedChange={(v) => {
-                        setGoalEnabled(Boolean(v));
-                        if (!v) setGoalDaily("");
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {goalEnabled ? (
-                  <div className="flex gap-2">
-                    <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                      <SelectTrigger className="flex-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="w-[140px]"
-                      type="number"
-                      value={goalDaily}
-                      onChange={(e) => setGoalDaily(e.target.value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              <div className="flex items-center justify-between gap-2">
-                <Label className="text-sm text-muted-foreground">Goal</Label>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Set a goal</span>
-                  <Switch
-                    checked={goalEnabled}
-                    onCheckedChange={(v) => {
-                      setGoalEnabled(Boolean(v));
-                      if (!v) setGoalDaily("");
-                    }}
-                  />
-                </div>
-              </div>
-
-              {goalEnabled ? (
-                <div className="flex gap-2">
-                  <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                    <SelectTrigger className="flex-1">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="daily">Daily</SelectItem>
-                      <SelectItem value="weekly">Weekly</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    className="w-[140px]"
-                    type="number"
-                    value={goalDaily}
-                    onChange={(e) => setGoalDaily(e.target.value)}
-                  />
-                </div>
-              ) : null}
-            </div>
-          )}
-
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="secondary" onClick={() => { setOpen(false); reset(); }}>
-              Cancel
-            </Button>
-            <Button onClick={create} disabled={!name.trim()}>
-              Create
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function HabitLogRow({
-  habit,
-  entry,
-  onLog,
-  onDelete,
-  onEditHabit,
-  dragging,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
-  isMobile,
-  onTouchStartDrag,
-  onTouchMoveDrag,
-  onTouchEndDrag,
-  touchDragging,
-}) {
-  const [value, setValue] = useState(() => {
-    if (!entry) return habit.type === "checkbox" ? false : "";
-    return entry.value;
-  });
-
-  useEffect(() => {
-    if (!entry) {
-      setValue(habit.type === "checkbox" ? false : "");
-    } else {
-      setValue(entry.value);
-    }
-  }, [entry, habit.type]);
-
-  function save() {
-    if (habit.type === "checkbox") {
-      onLog(Boolean(value));
-      return;
-    }
-    if (value === "" || value === null || value === undefined) return;
-    const n = clampNumber(value);
-    onLog(n);
-  }
-
-  // Helper for quick +/− increment for number habits
-  function bump(delta) {
-    if (habit.type !== "number") return;
-    const current = value === "" || value === null || value === undefined ? 0 : clampNumber(value);
-    const next = Math.max(0, current + delta);
-    setValue(next);
-    onLog(next);
-  }
-
-  return (
-    <div
-      data-habit-id={habit.id}
-      className={`rounded-2xl border p-2 md:p-3 ${dragging ? "opacity-60" : ""}`}
-      draggable={!isMobile}
-      onDragStart={isMobile ? undefined : onDragStart}
-      onDragOver={isMobile ? undefined : onDragOver}
-      onDrop={isMobile ? undefined : onDrop}
-      onDragEnd={isMobile ? undefined : onDragEnd}
-    >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="font-medium">{habit.name}</div>
-          </div>
-        </div>
-
-        <div className="flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap">
-          {habit.type === "checkbox" ? (
-            <div className="flex items-center gap-2 rounded-2xl border px-3 py-2">
-              <Switch
-                checked={Boolean(value)}
-                onCheckedChange={(v) => {
-                  setValue(v);
-                  onLog(Boolean(v));
-                }}
-              />
-              <span className="text-sm">Done</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-9 px-0"
-                onClick={() => bump(-1)}
-              >
-                −
-              </Button>
-
-              <Input
-                type="number"
-                step="any"
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                onBlur={save}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.currentTarget.blur();
-                    save();
-                  }
-                }}
-                className="w-[100px] text-center"
-              />
-
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 w-9 px-0"
-                onClick={() => bump(1)}
-              >
-                +
-              </Button>
-            </div>
-          )}
-
-          {/* Reorder handle */}
-          <div className="flex items-center">
-            <div
-              className={`rounded-xl border px-2 py-2 text-muted-foreground ${isMobile ? "" : "cursor-grab active:cursor-grabbing"} ${touchDragging ? "opacity-60" : ""}`}
-              title={isMobile ? "Press and drag to reorder" : "Drag to reorder"}
-              onTouchStart={
-                isMobile
-                  ? (e) => {
-                      e.preventDefault();
-                      onTouchStartDrag?.();
-                    }
-                  : undefined
-              }
-              onTouchMove={
-                isMobile
-                  ? (e) => {
-                      const t = e.touches?.[0];
-                      if (!t) return;
-                      onTouchMoveDrag?.(t.clientX, t.clientY);
-                    }
-                  : undefined
-              }
-              onTouchEnd={isMobile ? () => onTouchEndDrag?.() : undefined}
-            >
-              <GripVertical className="h-4 w-4" />
-            </div>
-          </div>
-
-          <EditHabitDialog habit={habit} onSave={onEditHabit} onDeleteHabit={onDelete} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function EditHabitDialog({ habit, onSave, onDeleteHabit }) {
-  const [open, setOpen] = useState(false);
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [name, setName] = useState(habit.name || "");
-  const [unit, setUnit] = useState(habit.unit || "");
-  const [goalValue, setGoalValue] = useState(String(habit.goalDaily ?? 0));
-  const [goalPeriod, setGoalPeriod] = useState(habit.goalPeriod || "daily");
-  const [goalEnabled, setGoalEnabled] = useState(Boolean((habit.goalDaily ?? 0) > 0));
-
-  useEffect(() => {
-    setName(habit.name || "");
-    setUnit(habit.unit || "");
-    setGoalValue(String(habit.goalDaily ?? 0));
-    setGoalPeriod(habit.goalPeriod || "daily");
-    setGoalEnabled(Boolean((habit.goalDaily ?? 0) > 0));
-  }, [habit]);
-
-  function save() {
-    const patch = {
-      name: name.trim() || habit.name,
-      goalDaily: goalEnabled && goalValue !== "" ? clampNumber(goalValue) : 0,
-      goalPeriod,
-    };
-    if (habit.type === "number") {
-      patch.unit = unit.trim() || habit.unit || "value";
-    }
-    onSave(patch);
-    setOpen(false);
-  }
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline" className="h-9 px-3">Edit</Button>
-      </DialogTrigger>
-      <DialogContent className="max-w-xl">
-        <DialogHeader>
-          <DialogTitle>Edit habit</DialogTitle>
-        </DialogHeader>
-
-        <div className="grid gap-3">
-          {habit.type === "number" ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label className="text-sm text-muted-foreground">Name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="grid gap-2">
-                <Label className="text-sm text-muted-foreground">Unit</Label>
-                <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
-              </div>
-            </div>
-          ) : (
-            <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-          )}
-
-          <div className="grid gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-sm text-muted-foreground">Goal</Label>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Set a goal</span>
-                <Switch
-                  checked={goalEnabled}
-                  onCheckedChange={(v) => {
-                    setGoalEnabled(Boolean(v));
-                    if (!v) setGoalValue("");
-                  }}
-                />
-              </div>
-            </div>
-
-            {goalEnabled ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  type="number"
-                  value={goalValue}
-                  onChange={(e) => setGoalValue(e.target.value)}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex items-center justify-between gap-2 pt-2">
-            <Button
-              type="button"
-              variant="outline"
-              className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => setConfirmOpen(true)}
-            >
-              Delete habit
-            </Button>
-
-            <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => setOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={save}>Save</Button>
-            </div>
-          </div>
-        </div>
-        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Delete habit?</DialogTitle>
-            </DialogHeader>
-            <div className="text-sm text-muted-foreground">
-              This will delete <span className="font-medium text-foreground">{habit.name}</span> and all its logs. This cannot be undone.
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="secondary" onClick={() => setConfirmOpen(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => {
-                  setConfirmOpen(false);
-                  setOpen(false);
-                  onDeleteHabit?.();
-                }}
-              >
-                Delete
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </DialogContent>
-    </Dialog>
-  );
-}
-
-function HistoryDay({ dateISO, dayEntries, habits, onDeleteOne }) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const items = Object.keys(dayEntries || {})
-    .map((hid) => {
-      const habit = habits.find((h) => h.id === hid);
-      return { hid, habit, entry: dayEntries[hid] };
-    })
-    .filter((x) => x.habit)
-    .sort((a, b) => habits.findIndex((h) => h.id === a.hid) - habits.findIndex((h) => h.id === b.hid));
-
-  return (
-    <div className="rounded-2xl border p-3">
-      <div className="flex items-center justify-between gap-2">
-        <div>
-          <div className="font-medium">{formatPrettyDate(dateISO)}</div>
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-2">
-        {items.map(({ hid, habit, entry }) => (
-          <div key={hid} className="flex items-start justify-between gap-3 rounded-2xl border px-3 py-2">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="font-medium">{habit.name}</span>
-              </div>
-              <div className="text-sm">
-                {habit.type === "checkbox"
-                  ? (entry.value ? "Done" : "Not done")
-                  : `${formatNumberWithDecimals(entry.value, habitDecimals(habit))} ${habit.unit || ""}`}
-              </div>
-            </div>
-
-            <Button
-              variant="outline"
-              className="gap-2 border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              onClick={() => {
-                setPendingDelete({ hid, name: habit.name });
-                setConfirmOpen(true);
-              }}
-            >
-              <Trash2 className="h-4 w-4" />
-              Remove
-            </Button>
-          </div>
-        ))}
-      </div>
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Remove entry?</DialogTitle>
-          </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            This will remove the log for <span className="font-medium text-foreground">{pendingDelete?.name || "this habit"}</span> on <span className="font-medium text-foreground">{formatPrettyDate(dateISO)}</span>.
-          </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setConfirmOpen(false);
-                setPendingDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                if (pendingDelete?.hid) onDeleteOne(pendingDelete.hid);
-                setConfirmOpen(false);
-                setPendingDelete(null);
-              }}
-            >
-              Remove
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  );
-}
