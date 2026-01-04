@@ -46,7 +46,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="gap-2">
+        <Button variant="secondary" className="gap-2 w-auto rounded-2xl shadow-sm">
           <Plus className="h-4 w-4" /> Add Habit
         </Button>
       </DialogTrigger>
