@@ -518,6 +518,38 @@ function PublicView({ token }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [publicState, setPublicState] = useState({ habits: [], entries: {} });
+  const [focusedHabitId, setFocusedHabitId] = useState("");
+
+  const habits = useMemo(() => publicState.habits || [], [publicState.habits]);
+  const entries = useMemo(() => publicState.entries || {}, [publicState.entries]);
+
+  const yearSummary = useMemo(() => {
+    const out = (habits || []).map((h) => ({ habit: h, stats: habitStats(h, entries, year) }));
+    out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
+    return out;
+  }, [habits, entries, year]);
+
+  const effectiveFocusedHabitId = focusedHabitId || habits[0]?.id || "";
+
+  const focusedHabit = useMemo(
+    () => (habits || []).find((h) => h.id === effectiveFocusedHabitId) || habits[0],
+    [habits, effectiveFocusedHabitId]
+  );
+
+  const focusedSeries = useMemo(() => {
+    if (!focusedHabit) return [];
+    return buildHabitSeries(focusedHabit, entries, year);
+  }, [focusedHabit, entries, year]);
+
+  const focusedStats = useMemo(() => {
+    if (!focusedHabit) return null;
+    return habitStats(focusedHabit, entries, year);
+  }, [focusedHabit, entries, year]);
+
+  const recentDates = useMemo(() => {
+    const all = listDatesInYear(entries, year);
+    return all.slice(0, 30);
+  }, [entries, year]);
 
   useEffect(() => {
     async function load() {
@@ -539,11 +571,14 @@ function PublicView({ token }) {
         habits: res.data.habits ?? [],
         entries: res.data.entries ?? {},
       });
+      if (!focusedHabitId && (res.data.habits ?? []).length) {
+        setFocusedHabitId((res.data.habits ?? [])[0].id);
+      }
       setLoading(false);
     }
 
     load();
-  }, [token, year]);
+  }, [token, year, focusedHabitId]);
 
   if (loading) {
     return (
@@ -569,13 +604,170 @@ function PublicView({ token }) {
           <p className="text-sm text-muted-foreground">View only</p>
         </header>
 
-        <pre className="rounded-2xl bg-background/60 p-4 text-xs overflow-auto">
-          {JSON.stringify(publicState, null, 2)}
-        </pre>
+        <div className="grid gap-4 lg:gap-6">
+          <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+            <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold tracking-tight">Year Summary</CardTitle>
+                <p className="text-sm text-muted-foreground">Totals for {year}.</p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {yearSummary.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No habits yet.</div>
+                ) : (
+                  <div className="space-y-2">
+                    {yearSummary.map(({ habit, stats }) => (
+                      <button
+                        key={habit.id}
+                        onClick={() => setFocusedHabitId(habit.id)}
+                        className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+                          effectiveFocusedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{habit.name}</span>
+                          </div>
+                          <div className="text-sm">
+                            <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-base font-semibold tracking-tight">Trend</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  {focusedHabit ? `Showing: ${focusedHabit.name}` : "Pick a habit"}
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {focusedHabit ? (
+                  <>
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+                      <MiniStat label="Total" value={focusedStats ? formatStatTotal(focusedHabit, focusedStats.total) : ""} />
+                      <MiniStat
+                        label="Avg logged"
+                        value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgPerLoggedDay) : ""}
+                      />
+                      <MiniStat label="Avg 7d" value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgLast7) : ""} />
+                      <MiniStat label="Best day" value={focusedStats ? formatStatBest(focusedHabit, focusedStats.best) : ""} />
+                    </div>
+
+                    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
+                      {focusedSeries.length === 0 ? (
+                        <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
+                          No data yet for this habit in {year}.
+                        </div>
+                      ) : (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
+                            <XAxis
+                              dataKey="date"
+                              tick={{ fontSize: 12, fontFamily: "inherit" }}
+                              tickFormatter={formatAxisDate}
+                              interval="preserveStartEnd"
+                              minTickGap={60}
+                              tickMargin={8}
+                              axisLine={false}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              tick={{ fontSize: 12, fontFamily: "inherit" }}
+                              axisLine={false}
+                              tickLine={false}
+                              tickFormatter={(v) =>
+                                focusedHabit.type === "checkbox" ? String(v) : formatNumberWithDecimals(v, habitDecimals(focusedHabit))
+                              }
+                            />
+                            <Tooltip
+                              content={<GlassTooltip />}
+                              labelFormatter={(l) => formatPrettyDate(l)}
+                              formatter={(v, name) => {
+                                if (v === null || v === undefined) return ["", ""]; // keep tooltip clean
+
+                                if (focusedHabit.type === "checkbox") {
+                                  const labelText = name === "goalCum" ? "Goal" : "Actual";
+                                  return [String(Math.round(Number(v))), labelText];
+                                }
+
+                                const dec = habitDecimals(focusedHabit);
+                                const labelText = name === "goalCum" ? "Goal" : "Actual";
+                                return [formatNumberWithDecimals(v, dec), labelText];
+                              }}
+                            />
+                            <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
+                            {focusedHabit.goalDaily ? (
+                              <Line type="monotone" dataKey="goalCum" dot={false} strokeWidth={2} strokeDasharray="6 6" />
+                            ) : null}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-sm text-muted-foreground">No habits found.</div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-base font-semibold tracking-tight">History</CardTitle>
+              <p className="text-sm text-muted-foreground">Last 30 days logged.</p>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {recentDates.length === 0 ? (
+                <div className="text-sm text-muted-foreground">No recent logs.</div>
+              ) : (
+                recentDates.map((d) => {
+                  const day = entries[d] || {};
+                  const items = (habits || [])
+                    .map((h) => {
+                      const e = day[h.id];
+                      if (!e) return null;
+                      return { id: h.id, label: h.name, value: entryToDisplay(h, e) };
+                    })
+                    .filter(Boolean);
+
+                  return (
+                    <div key={d} className="rounded-2xl bg-background/60 shadow-sm p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="text-sm font-semibold tracking-tight">{formatPrettyDate(d)}</div>
+                        <div className="text-xs text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"}</div>
+                      </div>
+                      {items.length ? (
+                        <div className="mt-2 grid gap-1">
+                          {items.map((it) => (
+                            <div key={it.id} className="flex items-center justify-between gap-3 text-sm">
+                              <div className="text-muted-foreground">{it.label}</div>
+                              <div className="tabular-nums">{it.value}</div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="mt-2 text-sm text-muted-foreground">No entries</div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
-
 }
 
 // =====================
