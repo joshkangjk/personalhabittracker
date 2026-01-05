@@ -715,7 +715,14 @@ function PublicView({ token }) {
                             />
                             <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
                             {focusedHabit.goalDaily ? (
-                              <Line type="monotone" dataKey="goalCum" dot={false} strokeWidth={2} strokeDasharray="6 6" />
+                              <Line
+                                type="monotone"
+                                dataKey="goalCum"
+                                dot={false}
+                                strokeWidth={2}
+                                strokeDasharray="6 6"
+                                stroke="#ef4444"
+                              />
                             ) : null}
                           </LineChart>
                         </ResponsiveContainer>
@@ -1658,7 +1665,14 @@ export default function HabitTrackerMVP() {
                               />
                               <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
                               {focusedHabit.goalDaily ? (
-                                <Line type="monotone" dataKey="goalCum" dot={false} strokeWidth={2} strokeDasharray="6 6" />
+                                <Line
+                                  type="monotone"
+                                  dataKey="goalCum"
+                                  dot={false}
+                                  strokeWidth={2}
+                                  strokeDasharray="6 6"
+                                  stroke="#ef4444"
+                                />
                               ) : null}
                             </LineChart>
                           </ResponsiveContainer>
