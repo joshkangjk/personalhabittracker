@@ -552,6 +552,8 @@ function PublicView({ token }) {
   }, [entries, year]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
       setError("");
@@ -561,24 +563,30 @@ function PublicView({ token }) {
         year,
       });
 
+      if (cancelled) return;
+
       if (res.error) {
         setError(res.error.message);
         setLoading(false);
         return;
       }
 
-      setPublicState({
-        habits: res.data.habits ?? [],
-        entries: res.data.entries ?? {},
-      });
-      if (!focusedHabitId && (res.data.habits ?? []).length) {
-        setFocusedHabitId((res.data.habits ?? [])[0].id);
-      }
+      const nextHabits = res.data?.habits ?? [];
+      const nextEntries = res.data?.entries ?? {};
+
+      setPublicState({ habits: nextHabits, entries: nextEntries });
+
+      // only set a default focus if none exists yet
+      setFocusedHabitId((prev) => prev || nextHabits[0]?.id || "");
+
       setLoading(false);
     }
 
     load();
-  }, [token, year, focusedHabitId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [token, year]);
 
   if (loading) {
     return (
