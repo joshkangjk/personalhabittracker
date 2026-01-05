@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { Download, MoreVertical } from "lucide-react";
+import { Download, MoreVertical, Link as LinkIcon, CheckCircle2, Loader2 } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
 import AddHabitDialog from "./components/AddHabitDialog";
@@ -98,6 +98,20 @@ function uuid() {
   return `${Math.random().toString(16).slice(2)}${Date.now()}`;
 }
 
+function makeShareToken() {
+  try {
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+  } catch {
+    // ignore
+  }
+  return `${Math.random().toString(16).slice(2)}${Date.now()}`;
+}
 
 function formatPrettyDate(iso) {
   try {
@@ -138,6 +152,16 @@ function isoRangeForYear(year) {
 function buildYearOptions() {
   const y = new Date().getFullYear();
   return [y - 1, y, y + 1];
+}
+
+function getPublicTokenFromPath() {
+  try {
+    const p = window.location.pathname || "";
+    const m = p.match(/^\/view\/([^/]+)\/?$/);
+    return m ? decodeURIComponent(m[1]) : "";
+  } catch {
+    return "";
+  }
 }
 
 // =====================
@@ -489,6 +513,70 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
   );
 }
 
+function PublicView({ token }) {
+  const [year] = useState(new Date().getFullYear());
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [publicState, setPublicState] = useState({ habits: [], entries: {} });
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setError("");
+
+      const res = await supabase.rpc("get_public_year_data", {
+        share_token: token,
+        year,
+      });
+
+      if (res.error) {
+        setError(res.error.message);
+        setLoading(false);
+        return;
+      }
+
+      setPublicState({
+        habits: res.data.habits ?? [],
+        entries: res.data.entries ?? {},
+      });
+      setLoading(false);
+    }
+
+    load();
+  }, [token, year]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">
+        Loading…
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-sm text-destructive">
+        {error}
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/15 text-foreground text-[15px] font-sans antialiased">
+      <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
+        <header className="rounded-2xl bg-background/60 backdrop-blur shadow-sm px-4 py-3">
+          <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
+          <p className="text-sm text-muted-foreground">View only</p>
+        </header>
+
+        <pre className="rounded-2xl bg-background/60 p-4 text-xs overflow-auto">
+          {JSON.stringify(publicState, null, 2)}
+        </pre>
+      </div>
+    </div>
+  );
+
+}
 
 // =====================
 // Main component
@@ -505,6 +593,69 @@ export default function HabitTrackerMVP() {
   const isMobile = useIsMobile();
   const [focusedHabitId, setFocusedHabitId] = useState(() => state.habits[0]?.id || "");
   const [draggingHabitId, setDraggingHabitId] = useState("");
+  const [shareBusy, setShareBusy] = useState(false);
+  const [shareOk, setShareOk] = useState(false);
+  const [shareError, setShareError] = useState("");
+
+  const copyToClipboard = useCallback(async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      try {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }, []);
+
+  const handleCreateShareLink = useCallback(async () => {
+    const userId = session?.user?.id;
+    if (!userId || shareBusy) return;
+
+    setShareBusy(true);
+    setShareOk(false);
+    setShareError("");
+
+    try {
+      const token = makeShareToken();
+
+      const up = await supabase
+        .from("public_profiles")
+        .upsert(
+          { user_id: userId, share_token: token, is_enabled: true, updated_at: new Date().toISOString() },
+          { onConflict: "user_id" }
+        )
+        .select("share_token")
+        .single();
+
+      if (up.error) throw new Error(up.error.message);
+
+      const t = up.data?.share_token || token;
+      const url = `${window.location.origin}/view/${encodeURIComponent(t)}`;
+
+      const ok = await copyToClipboard(url);
+
+      if (!ok) {
+        setShareError("Could not copy the link. Please copy manually: " + url);
+      } else {
+        setShareOk(true);
+        setTimeout(() => setShareOk(false), 2000);
+      }
+    } catch (e) {
+      setShareError(e?.message || "Failed to create share link");
+    } finally {
+      setShareBusy(false);
+    }
+  }, [copyToClipboard, session?.user?.id, shareBusy]);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data?.session || null));
 
@@ -1002,6 +1153,9 @@ export default function HabitTrackerMVP() {
     return habitStats(focusedHabit, state.entries, selectedYear);
   }, [focusedHabit, state.entries, selectedYear]);
 
+  const publicToken = getPublicTokenFromPath();
+  if (publicToken) return <PublicView token={publicToken} />;
+
   if (!session) return <LoginScreen />;
 
   return (
@@ -1046,6 +1200,9 @@ export default function HabitTrackerMVP() {
             </div>
 
             <div className="flex items-center gap-2">
+              <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
+                {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
+              </Button>
               <Button onClick={handleExport} variant="secondary" className="gap-2">
                 <Download className="h-4 w-4" /> Export
               </Button>
@@ -1053,6 +1210,13 @@ export default function HabitTrackerMVP() {
                 Sign out
               </Button>
             </div>
+
+            {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
+            {shareOk ? (
+              <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Copied
+              </div>
+            ) : null}
           </div>
 
           {/* Mobile controls */}
@@ -1089,6 +1253,17 @@ export default function HabitTrackerMVP() {
                   </div>
 
                   <div className="grid gap-2">
+                    <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
+                      {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share link
+                    </Button>
+
+                    {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
+                    {shareOk ? (
+                      <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Copied
+                      </div>
+                    ) : null}
+
                     <Button onClick={handleMobileExport} variant="secondary" className="gap-2">
                       <Download className="h-4 w-4" /> Export
                     </Button>
