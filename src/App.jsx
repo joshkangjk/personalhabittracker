@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, ReferenceLine } from "recharts";
 import { Download, MoreVertical, Link as LinkIcon, CheckCircle2, Loader2 } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
@@ -162,6 +162,17 @@ function getPublicTokenFromPath() {
   } catch {
     return "";
   }
+}
+
+// =====================
+// Chart helpers
+// =====================
+function chartGradientId(prefix, habitId) {
+  return `${prefix}_actual_${String(habitId || "none")}`;
+}
+
+function isCurrentYear(year) {
+  return Number(year) === new Date().getFullYear();
 }
 
 // =====================
@@ -678,6 +689,12 @@ function PublicView({ token }) {
                       ) : (
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                            <defs>
+                              <linearGradient id={chartGradientId("public", focusedHabit?.id)} x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
+                                <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
+                              </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
                             <XAxis
                               dataKey="date"
@@ -693,6 +710,7 @@ function PublicView({ token }) {
                               tick={{ fontSize: 12, fontFamily: "inherit" }}
                               axisLine={false}
                               tickLine={false}
+                              padding={{ top: 12, bottom: 12 }}
                               tickFormatter={(v) =>
                                 focusedHabit.type === "checkbox" ? String(v) : formatNumberWithDecimals(v, habitDecimals(focusedHabit))
                               }
@@ -713,15 +731,33 @@ function PublicView({ token }) {
                                 return [formatNumberWithDecimals(v, dec), labelText];
                               }}
                             />
-                            <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
+                            {isCurrentYear(year) ? (
+                              <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
+                            ) : null}
+                            <Area
+                              type="monotone"
+                              dataKey="actualCum"
+                              stroke="none"
+                              fill={`url(#${chartGradientId("public", focusedHabit?.id)})`}
+                              isAnimationActive
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="actualCum"
+                              dot={false}
+                              activeDot={{ r: 4 }}
+                              strokeWidth={2}
+                              isAnimationActive
+                            />
                             {focusedHabit.goalDaily ? (
                               <Line
                                 type="monotone"
                                 dataKey="goalCum"
                                 dot={false}
-                                strokeWidth={2}
+                                strokeWidth={1.75}
                                 strokeDasharray="6 6"
                                 stroke="#ef4444"
+                                strokeOpacity={0.65}
                               />
                             ) : null}
                           </LineChart>
@@ -1626,6 +1662,12 @@ export default function HabitTrackerMVP() {
                         ) : (
                           <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                              <defs>
+                                <linearGradient id={chartGradientId("private", focusedHabit?.id)} x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
+                                  <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
+                                </linearGradient>
+                              </defs>
                               <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
                               <XAxis
                                 dataKey="date"
@@ -1641,6 +1683,7 @@ export default function HabitTrackerMVP() {
                                 tick={{ fontSize: 12, fontFamily: "inherit" }}
                                 axisLine={false}
                                 tickLine={false}
+                                padding={{ top: 12, bottom: 12 }}
                                 tickFormatter={(v) =>
                                   focusedHabit.type === "checkbox"
                                     ? String(v)
@@ -1663,15 +1706,33 @@ export default function HabitTrackerMVP() {
                                   return [formatNumberWithDecimals(v, dec), labelText];
                                 }}
                               />
-                              <Line type="monotone" dataKey="actualCum" dot={false} strokeWidth={2} />
+                              {isCurrentYear(selectedYear) ? (
+                                <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
+                              ) : null}
+                              <Area
+                                type="monotone"
+                                dataKey="actualCum"
+                                stroke="none"
+                                fill={`url(#${chartGradientId("private", focusedHabit?.id)})`}
+                                isAnimationActive
+                              />
+                              <Line
+                                type="monotone"
+                                dataKey="actualCum"
+                                dot={false}
+                                activeDot={{ r: 4 }}
+                                strokeWidth={2}
+                                isAnimationActive
+                              />
                               {focusedHabit.goalDaily ? (
                                 <Line
                                   type="monotone"
                                   dataKey="goalCum"
                                   dot={false}
-                                  strokeWidth={2}
+                                  strokeWidth={1.75}
                                   strokeDasharray="6 6"
                                   stroke="#ef4444"
+                                  strokeOpacity={0.65}
                                 />
                               ) : null}
                             </LineChart>
