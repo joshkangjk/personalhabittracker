@@ -384,19 +384,19 @@ function buildHabitSeries(habit, entries, year) {
       ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
       : new Date(year, 11, 31);
 
-      // Goal setup (single yearly goal)
-      const goalYearly = clampNumber(getYearlyGoal(habit));
+  // Goal setup (single yearly goal)
+  const goalYearly = clampNumber(getYearlyGoal(habit));
 
-      const daysInYear = (y) => {
-        const s = new Date(y, 0, 1);
-        const e = new Date(y + 1, 0, 1);
-        return Math.round((e - s) / (1000 * 60 * 60 * 24));
-      };
+  const daysInYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y + 1, 0, 1);
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  };
 
-      const goalPerDayForDate = (dateObj) => {
-        if (!(goalYearly > 0)) return 0;
-        return goalYearly / daysInYear(dateObj.getFullYear());
-      };
+  const goalPerDayForDate = (dateObj) => {
+    if (!(goalYearly > 0)) return 0;
+    return goalYearly / daysInYear(dateObj.getFullYear());
+  };
 
   let actualCum = 0;
   let goalCum = 0;
@@ -1766,7 +1766,7 @@ export default function HabitTrackerMVP() {
                       <div className="h-2" />
                     </>
                   ) : (
-                    <div className="text-sm text-muted-forxeground">Add a habit first.</div>
+                    <div className="text-sm text-muted-foreground">Add a habit first.</div>
                   )}
                 </CardContent>
               </Card>

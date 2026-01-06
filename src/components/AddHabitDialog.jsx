@@ -12,7 +12,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
   const [name, setName] = useState("");
   const [type, setType] = useState("number");
   const [unit, setUnit] = useState("reps");
-  const [goalDaily, setGoalDaily] = useState("");
+  const [goalValue, setGoalValue] = useState("");
   const [goalPeriod, setGoalPeriod] = useState("daily");
   const [goalEnabled, setGoalEnabled] = useState(false);
 
@@ -20,7 +20,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
     setName("");
     setType("number");
     setUnit("reps");
-    setGoalDaily("");
+    setGoalValue("");
     setGoalPeriod("daily");
     setGoalEnabled(false);
   }
@@ -30,8 +30,8 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
     if (!cleanName) return;
 
     const goals =
-      goalEnabled && goalDaily !== "" && Number(goalDaily) > 0
-        ? { [goalPeriod]: clampNumber(goalDaily) }
+      goalEnabled && goalValue !== "" && Number(goalValue) > 0
+        ? { [goalPeriod]: clampNumber(goalValue) }
         : {};
 
     const h = {
@@ -97,7 +97,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                       checked={goalEnabled}
                       onCheckedChange={(v) => {
                         setGoalEnabled(Boolean(v));
-                        if (!v) setGoalDaily("");
+                        if (!v) setGoalValue("");
                       }}
                     />
                   </div>
@@ -119,8 +119,8 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                     <Input
                       className="w-[140px]"
                       type="number"
-                      value={goalDaily}
-                      onChange={(e) => setGoalDaily(e.target.value)}
+                      value={goalValue}
+                      onChange={(e) => setGoalValue(e.target.value)}
                     />
                   </div>
                 ) : null}
@@ -136,7 +136,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                     checked={goalEnabled}
                     onCheckedChange={(v) => {
                       setGoalEnabled(Boolean(v));
-                      if (!v) setGoalDaily("");
+                      if (!v) setGoalValue("");
                     }}
                   />
                 </div>
@@ -158,8 +158,8 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                   <Input
                     className="w-[140px]"
                     type="number"
-                    value={goalDaily}
-                    onChange={(e) => setGoalDaily(e.target.value)}
+                    value={goalValue}
+                    onChange={(e) => setGoalValue(e.target.value)}
                   />
                 </div>
               ) : null}

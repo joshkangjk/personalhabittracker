@@ -33,7 +33,8 @@ export default function HabitLogRow({
 
   const goalText = useMemo(() => {
     const goals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
-    const order = ["daily", "weekly", "monthly", "yearly"];
+    // Prefer the most coarse goal if multiple keys exist (e.g., after switching period in the edit dialog)
+    const order = ["yearly", "monthly", "weekly", "daily"];
     const period = order.find((p) => Number(goals?.[p] ?? 0) > 0) || "daily";
     const g = Number(goals?.[period] ?? 0);
     if (!g) return "";
