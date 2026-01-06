@@ -168,7 +168,7 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className="w-[110px] text-center rounded-xl"
+                className="w-[110px] text-center rounded-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
 
               <Button type="button" variant="ghost" className="h-9 w-9 px-0 rounded-xl" onClick={() => bump(1)}>
