@@ -449,6 +449,29 @@ function habitFromRow(r) {
   };
 }
 
+function normalizePublicHabit(h) {
+  if (!h || typeof h !== "object") return h;
+
+  // Support both snake_case (from SQL) and camelCase (from client/local)
+  const legacyGoal = Number(h.goal_daily ?? h.goalDaily ?? 0);
+  const legacyPeriodRaw = h.goal_period ?? h.goalPeriod;
+  const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(legacyPeriodRaw) ? legacyPeriodRaw : "daily";
+
+  let goals = normalizeGoals(h.goals);
+  const hasAny = goals.daily || goals.weekly || goals.monthly || goals.yearly;
+
+  if (!hasAny && legacyGoal > 0) {
+    goals = { ...goals, [legacyPeriod]: clampNumber(legacyGoal) };
+  }
+
+  return {
+    ...h,
+    goals,
+    decimals: h.type === "number" ? Number(h.decimals ?? 0) : 0,
+    unit: h.type === "number" ? (h.unit ?? undefined) : undefined,
+  };
+}
+
 function habitToInsertRow(h, userId, sortIndex) {
   return {
     id: h.id,
@@ -841,8 +864,9 @@ function PublicView({ token }) {
         return;
       }
 
-      const nextHabits = res.data?.habits ?? [];
+      const nextHabitsRaw = res.data?.habits ?? [];
       const nextEntries = res.data?.entries ?? {};
+      const nextHabits = (nextHabitsRaw || []).map(normalizePublicHabit);
 
       setPublicState({ habits: nextHabits, entries: nextEntries });
 
