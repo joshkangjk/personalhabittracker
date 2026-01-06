@@ -577,8 +577,8 @@ function formatStatBest(habit, best) {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="rounded-2xl bg-background/60 shadow-sm p-3">
-      <div className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+    <div className="rounded-2xl bg-background/50 border border-border/60 p-3">
+      <div className="text-xs text-muted-foreground/80 whitespace-nowrap overflow-hidden text-ellipsis">
         {label}
       </div>
       <div className="mt-1 text-lg font-semibold tabular-nums tracking-tight">{value || ""}</div>
@@ -696,7 +696,7 @@ function TrendChart({ series, habit, year, gradientPrefix }) {
   if (!habit) return null;
 
   return (
-    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
+    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/50 border border-border/60 p-2">
       {!(series || []).length ? (
         <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
           No data yet for this habit in {year}.
@@ -773,8 +773,8 @@ function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
         <button
           key={habit.id}
           onClick={() => onSelectHabit?.(habit.id)}
-          className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
-            selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
+          className={`w-full text-left rounded-2xl bg-background/50 border border-border/60 p-3 hover:bg-accent/10 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+            selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/10" : ""
           }`}
         >
           <div className="flex items-center justify-between gap-2">
@@ -785,7 +785,7 @@ function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
               <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
             </div>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground">
+          <div className="mt-1.5 text-xs text-muted-foreground">
             <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
           </div>
         </button>
