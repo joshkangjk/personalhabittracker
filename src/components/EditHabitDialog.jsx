@@ -83,6 +83,8 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
                   <SelectContent>
                     <SelectItem value="daily">Daily</SelectItem>
                     <SelectItem value="weekly">Weekly</SelectItem>
+                    <SelectItem value="monthly">Monthly</SelectItem>
+                    <SelectItem value="yearly">Yearly</SelectItem>
                   </SelectContent>
                 </Select>
                 <Input type="number" value={goalValue} onChange={(e) => setGoalValue(e.target.value)} />
