@@ -487,6 +487,27 @@ function MiniStat({ label, value }) {
   );
 }
 
+function makeTrendTooltipFormatter(habit, habitDecimalsFn, formatNumberFn) {
+  return (v, name) => {
+    if (v === null || v === undefined) return ["", ""]; // keep tooltip clean
+
+    const labelText = name === "goalCum" ? "Goal" : "Actual";
+
+    if (habit?.type === "checkbox") {
+      return [String(Math.round(Number(v))), labelText];
+    }
+
+    const dec = habitDecimalsFn(habit);
+    return [formatNumberFn(v, dec), labelText];
+  };
+}
+
+function makeTrendYAxisTickFormatter(habit, habitDecimalsFn, formatNumberFn) {
+  return (v) => {
+    if (habit?.type === "checkbox") return String(v);
+    return formatNumberFn(v, habitDecimalsFn(habit));
+  };
+}
 // Custom glass styled tooltip for Recharts Trend chart
 function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
   if (!active || !payload || payload.length === 0) return null;
@@ -720,25 +741,20 @@ function PublicView({ token }) {
                               axisLine={false}
                               tickLine={false}
                               padding={{ top: 12, bottom: 12 }}
-                              tickFormatter={(v) =>
-                                focusedHabit.type === "checkbox" ? String(v) : formatNumberWithDecimals(v, habitDecimals(focusedHabit))
-                              }
+                              tickFormatter={makeTrendYAxisTickFormatter(
+                                focusedHabit,
+                                habitDecimals,
+                                formatNumberWithDecimals
+                              )}
                             />
                             <Tooltip
                               content={<GlassTooltip />}
                               labelFormatter={(l) => formatPrettyDate(l)}
-                              formatter={(v, name) => {
-                                if (v === null || v === undefined) return ["", ""]; // keep tooltip clean
-
-                                if (focusedHabit.type === "checkbox") {
-                                  const labelText = name === "goalCum" ? "Goal" : "Actual";
-                                  return [String(Math.round(Number(v))), labelText];
-                                }
-
-                                const dec = habitDecimals(focusedHabit);
-                                const labelText = name === "goalCum" ? "Goal" : "Actual";
-                                return [formatNumberWithDecimals(v, dec), labelText];
-                              }}
+                              formatter={makeTrendTooltipFormatter(
+                                focusedHabit,
+                                habitDecimals,
+                                formatNumberWithDecimals
+                              )}
                             />
                             {isCurrentYear(year) ? (
                               <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
@@ -1693,27 +1709,20 @@ export default function HabitTrackerMVP() {
                                 axisLine={false}
                                 tickLine={false}
                                 padding={{ top: 12, bottom: 12 }}
-                                tickFormatter={(v) =>
-                                  focusedHabit.type === "checkbox"
-                                    ? String(v)
-                                    : formatNumberWithDecimals(v, habitDecimals(focusedHabit))
-                                }
+                                tickFormatter={makeTrendYAxisTickFormatter(
+                                  focusedHabit,
+                                  habitDecimals,
+                                  formatNumberWithDecimals
+                                )}
                               />
                               <Tooltip
                                 content={<GlassTooltip />}
                                 labelFormatter={(l) => formatPrettyDate(l)}
-                                formatter={(v, name) => {
-                                  if (v === null || v === undefined) return ["", ""];
-
-                                  if (focusedHabit.type === "checkbox") {
-                                    const labelText = name === "goalCum" ? "Goal" : "Actual";
-                                    return [String(Math.round(Number(v))), labelText];
-                                  }
-
-                                  const dec = habitDecimals(focusedHabit);
-                                  const labelText = name === "goalCum" ? "Goal" : "Actual";
-                                  return [formatNumberWithDecimals(v, dec), labelText];
-                                }}
+                                formatter={makeTrendTooltipFormatter(
+                                  focusedHabit,
+                                  habitDecimals,
+                                  formatNumberWithDecimals
+                                )}
                               />
                               {isCurrentYear(selectedYear) ? (
                                 <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
