@@ -554,6 +554,89 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
   );
 }
 
+function HabitStatsGrid({ habit, stats }) {
+  if (!habit) return null;
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+      <MiniStat label="Total" value={stats ? formatStatTotal(habit, stats.total) : ""} />
+      <MiniStat label="Avg logged" value={stats ? formatStatAvg(habit, stats.avgPerLoggedDay) : ""} />
+      <MiniStat label="Avg 7d" value={stats ? formatStatAvg(habit, stats.avgLast7) : ""} />
+      <MiniStat label="Best day" value={stats ? formatStatBest(habit, stats.best) : ""} />
+    </div>
+  );
+}
+
+function TrendChart({ series, habit, year, gradientPrefix }) {
+  if (!habit) return null;
+
+  return (
+    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
+      {!(series || []).length ? (
+        <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
+          No data yet for this habit in {year}.
+        </div>
+      ) : (
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={chartGradientId(gradientPrefix, habit?.id)} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
+                <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 12, fontFamily: "inherit" }}
+              tickFormatter={formatAxisDate}
+              interval="preserveStartEnd"
+              minTickGap={60}
+              tickMargin={8}
+              axisLine={false}
+              tickLine={false}
+            />
+            <YAxis
+              tick={{ fontSize: 12, fontFamily: "inherit" }}
+              axisLine={false}
+              tickLine={false}
+              padding={{ top: 12, bottom: 12 }}
+              tickFormatter={makeTrendYAxisTickFormatter(habit, habitDecimals, formatNumberWithDecimals)}
+            />
+            <Tooltip
+              content={<GlassTooltip />}
+              labelFormatter={(l) => formatPrettyDate(l)}
+              formatter={makeTrendTooltipFormatter(habit, habitDecimals, formatNumberWithDecimals)}
+            />
+            {isCurrentYear(year) ? (
+              <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
+            ) : null}
+            <Area
+              type="monotone"
+              dataKey="actualCum"
+              stroke="none"
+              fill={`url(#${chartGradientId(gradientPrefix, habit?.id)})`}
+              isAnimationActive
+            />
+            <Line type="monotone" dataKey="actualCum" dot={false} activeDot={{ r: 4 }} strokeWidth={2} isAnimationActive />
+            {habit.goalDaily ? (
+              <Line
+                type="monotone"
+                dataKey="goalCum"
+                dot={false}
+                strokeWidth={1.75}
+                strokeDasharray="6 6"
+                stroke="#ef4444"
+                strokeOpacity={0.65}
+              />
+            ) : null}
+          </LineChart>
+        </ResponsiveContainer>
+      )}
+    </div>
+  );
+}
+
 function PublicView({ token }) {
   const [year] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
@@ -701,94 +784,14 @@ function PublicView({ token }) {
               <CardContent className="space-y-3">
                 {focusedHabit ? (
                   <>
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                      <MiniStat label="Total" value={focusedStats ? formatStatTotal(focusedHabit, focusedStats.total) : ""} />
-                      <MiniStat
-                        label="Avg logged"
-                        value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgPerLoggedDay) : ""}
-                      />
-                      <MiniStat label="Avg 7d" value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgLast7) : ""} />
-                      <MiniStat label="Best day" value={focusedStats ? formatStatBest(focusedHabit, focusedStats.best) : ""} />
-                    </div>
+                    <HabitStatsGrid habit={focusedHabit} stats={focusedStats} />
 
-                    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
-                      {focusedSeries.length === 0 ? (
-                        <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
-                          No data yet for this habit in {year}.
-                        </div>
-                      ) : (
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                            <defs>
-                              <linearGradient id={chartGradientId("public", focusedHabit?.id)} x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
-                                <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
-                            <XAxis
-                              dataKey="date"
-                              tick={{ fontSize: 12, fontFamily: "inherit" }}
-                              tickFormatter={formatAxisDate}
-                              interval="preserveStartEnd"
-                              minTickGap={60}
-                              tickMargin={8}
-                              axisLine={false}
-                              tickLine={false}
-                            />
-                            <YAxis
-                              tick={{ fontSize: 12, fontFamily: "inherit" }}
-                              axisLine={false}
-                              tickLine={false}
-                              padding={{ top: 12, bottom: 12 }}
-                              tickFormatter={makeTrendYAxisTickFormatter(
-                                focusedHabit,
-                                habitDecimals,
-                                formatNumberWithDecimals
-                              )}
-                            />
-                            <Tooltip
-                              content={<GlassTooltip />}
-                              labelFormatter={(l) => formatPrettyDate(l)}
-                              formatter={makeTrendTooltipFormatter(
-                                focusedHabit,
-                                habitDecimals,
-                                formatNumberWithDecimals
-                              )}
-                            />
-                            {isCurrentYear(year) ? (
-                              <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
-                            ) : null}
-                            <Area
-                              type="monotone"
-                              dataKey="actualCum"
-                              stroke="none"
-                              fill={`url(#${chartGradientId("public", focusedHabit?.id)})`}
-                              isAnimationActive
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="actualCum"
-                              dot={false}
-                              activeDot={{ r: 4 }}
-                              strokeWidth={2}
-                              isAnimationActive
-                            />
-                            {focusedHabit.goalDaily ? (
-                              <Line
-                                type="monotone"
-                                dataKey="goalCum"
-                                dot={false}
-                                strokeWidth={1.75}
-                                strokeDasharray="6 6"
-                                stroke="#ef4444"
-                                strokeOpacity={0.65}
-                              />
-                            ) : null}
-                          </LineChart>
-                        </ResponsiveContainer>
-                      )}
-                    </div>
+                    <TrendChart
+                      series={focusedSeries}
+                      habit={focusedHabit}
+                      year={year}
+                      gradientPrefix="public"
+                    />
                   </>
                 ) : (
                   <div className="text-sm text-muted-foreground">No habits found.</div>
@@ -1660,104 +1663,14 @@ export default function HabitTrackerMVP() {
                 <CardContent className="space-y-3">
                   {focusedHabit ? (
                     <>
-                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
-                        <MiniStat
-                          label="Total"
-                          value={focusedStats ? formatStatTotal(focusedHabit, focusedStats.total) : ""}
-                        />
-                        <MiniStat
-                          label="Avg logged"
-                          value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgPerLoggedDay) : ""}
-                        />
-                        <MiniStat
-                          label="Avg 7d"
-                          value={focusedStats ? formatStatAvg(focusedHabit, focusedStats.avgLast7) : ""}
-                        />
-                        <MiniStat
-                          label="Best day"
-                          value={focusedStats ? formatStatBest(focusedHabit, focusedStats.best) : ""}
-                        />
-                      </div>
+                      <HabitStatsGrid habit={focusedHabit} stats={focusedStats} />
 
-                      <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 p-2 shadow-sm">
-                        {focusedSeries.length === 0 ? (
-                          <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
-                            No data yet for this habit in {selectedYear}.
-                          </div>
-                        ) : (
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={focusedSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-                              <defs>
-                                <linearGradient id={chartGradientId("private", focusedHabit?.id)} x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
-                                  <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
-                                </linearGradient>
-                              </defs>
-                              <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
-                              <XAxis
-                                dataKey="date"
-                                tick={{ fontSize: 12, fontFamily: "inherit" }}
-                                tickFormatter={formatAxisDate}
-                                interval="preserveStartEnd"
-                                minTickGap={60}
-                                tickMargin={8}
-                                axisLine={false}
-                                tickLine={false}
-                              />
-                              <YAxis
-                                tick={{ fontSize: 12, fontFamily: "inherit" }}
-                                axisLine={false}
-                                tickLine={false}
-                                padding={{ top: 12, bottom: 12 }}
-                                tickFormatter={makeTrendYAxisTickFormatter(
-                                  focusedHabit,
-                                  habitDecimals,
-                                  formatNumberWithDecimals
-                                )}
-                              />
-                              <Tooltip
-                                content={<GlassTooltip />}
-                                labelFormatter={(l) => formatPrettyDate(l)}
-                                formatter={makeTrendTooltipFormatter(
-                                  focusedHabit,
-                                  habitDecimals,
-                                  formatNumberWithDecimals
-                                )}
-                              />
-                              {isCurrentYear(selectedYear) ? (
-                                <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
-                              ) : null}
-                              <Area
-                                type="monotone"
-                                dataKey="actualCum"
-                                stroke="none"
-                                fill={`url(#${chartGradientId("private", focusedHabit?.id)})`}
-                                isAnimationActive
-                              />
-                              <Line
-                                type="monotone"
-                                dataKey="actualCum"
-                                dot={false}
-                                activeDot={{ r: 4 }}
-                                strokeWidth={2}
-                                isAnimationActive
-                              />
-                              {focusedHabit.goalDaily ? (
-                                <Line
-                                  type="monotone"
-                                  dataKey="goalCum"
-                                  dot={false}
-                                  strokeWidth={1.75}
-                                  strokeDasharray="6 6"
-                                  stroke="#ef4444"
-                                  strokeOpacity={0.65}
-                                />
-                              ) : null}
-                            </LineChart>
-                          </ResponsiveContainer>
-                        )}
-                      </div>
-
+                      <TrendChart
+                        series={focusedSeries}
+                        habit={focusedHabit}
+                        year={selectedYear}
+                        gradientPrefix="private"
+                      />
                       <div className="h-2" />
                     </>
                   ) : (
