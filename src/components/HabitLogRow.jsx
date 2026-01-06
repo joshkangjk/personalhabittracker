@@ -34,6 +34,7 @@ export default function HabitLogRow({
   const hasEntry = entry !== null && entry !== undefined;
 
   const [committing, setCommitting] = useState(false);
+  const [valueFlash, setValueFlash] = useState(false);
 
   const commitWithDelay = useCallback(
     (nextValue, commitFn) => {
@@ -41,6 +42,8 @@ export default function HabitLogRow({
       setCommitting(true);
       setTimeout(() => {
         commitFn(nextValue);
+        setValueFlash(true);
+        setTimeout(() => setValueFlash(false), 180);
         setCommitting(false);
       }, 120);
     },
@@ -164,7 +167,7 @@ export default function HabitLogRow({
         >
           {habit.type === "checkbox" ? (
             <div
-              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-1.5 transition-opacity transition-transform active:scale-[0.98] ${
+              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-1.5 transition-opacity transition-transform active:scale-[0.98] ${valueFlash ? "opacity-70" : ""} ${
                 hasEntry ? "opacity-70 hover:opacity-90" : ""
               } ${isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"}`}
             >
@@ -191,9 +194,9 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className={`w-[110px] text-center rounded-xl border-0 shadow-sm transition-colors ${
-                  hasEntry ? "bg-muted/20 text-foreground" : "bg-background/60 text-foreground"
-                } [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                className={`w-[110px] text-center rounded-xl border-0 shadow-sm transition-colors transition-opacity ${
+                  valueFlash ? "opacity-70" : "opacity-100"
+                } ${hasEntry ? "bg-muted/20 text-foreground" : "bg-background/60 text-foreground"} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               />
 
               <Button
@@ -211,9 +214,9 @@ export default function HabitLogRow({
 
           <div className="flex items-center justify-end gap-2">
             <div
-              className={`rounded-xl bg-background/60 shadow-sm px-2 py-1.5 text-muted-foreground ${
+              className={`rounded-xl px-2 py-1.5 text-muted-foreground transition-opacity ${
                 isMobile ? "" : "cursor-grab active:cursor-grabbing"
-              } ${touchDragging ? "opacity-60" : ""}`}
+              } ${dragging || touchDragging ? "opacity-80 bg-background/60 shadow-sm" : "opacity-35 hover:opacity-70"}`}
               title={isMobile ? "Press and drag to reorder" : "Drag to reorder"}
               onTouchStart={isMobile ? handleTouchStart : undefined}
               onTouchMove={isMobile ? handleTouchMove : undefined}
