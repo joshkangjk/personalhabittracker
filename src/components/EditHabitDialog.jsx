@@ -51,30 +51,30 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
           <DialogTitle>Edit habit</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-3">
+        <div className="grid gap-2">
           {habit.type === "number" ? (
-            <div className="grid grid-cols-2 gap-3">
-              <div className="grid gap-2">
-                <Label className="text-sm text-muted-foreground">Name</Label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div className="grid gap-1.5">
+                <Label className="text-xs text-muted-foreground">Name</Label>
+                <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
-              <div className="grid gap-2">
+              <div className="grid gap-1.5">
                 <Label className="text-sm text-muted-foreground">Unit</Label>
                 <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
               </div>
             </div>
           ) : (
-            <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">Name</Label>
+              <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           )}
 
-          <div className="grid gap-2">
+          <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
             <div className="flex items-center justify-between gap-2">
               <Label className="text-sm text-muted-foreground">Goal</Label>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Set a goal</span>
+                <span className="text-xs text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
                 <Switch
                   checked={goalEnabled}
                   onCheckedChange={(v) => {
@@ -86,8 +86,8 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
             </div>
 
             {goalEnabled ? (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="grid gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                <div className="grid gap-1.5">
                   <Label className="text-xs text-muted-foreground">Period</Label>
                   <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
                     <SelectTrigger>
@@ -102,26 +102,31 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
                   </Select>
                 </div>
 
-                <div className="grid gap-2">
+                <div className="grid gap-1.5">
                   <Label className="text-xs text-muted-foreground">Goal</Label>
-                  <Input type="number" value={goalValue} onChange={(e) => setGoalValue(e.target.value)} />
+                  <Input
+                    type="number"
+                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    value={goalValue}
+                    onChange={(e) => setGoalValue(e.target.value)}
+                  />
                 </div>
               </div>
             ) : null}
           </div>
 
-          <div className="flex items-center justify-between gap-2 pt-2">
+          <div className="mt-2 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
             <Button
               type="button"
-              variant="outline"
-              className="border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              variant="ghost"
+              className="h-9 px-2 text-sm text-destructive/80 hover:text-destructive hover:bg-destructive/10"
               onClick={() => setConfirmOpen(true)}
             >
               Delete habit
             </Button>
 
             <div className="flex items-center gap-2">
-              <Button variant="secondary" onClick={() => setOpen(false)}>
+              <Button variant="ghost" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
               <Button onClick={save}>Save</Button>
