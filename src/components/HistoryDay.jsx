@@ -26,7 +26,7 @@ export default function HistoryDay({
   return (
     <div className="rounded-2xl bg-background/60 shadow-sm p-3">
       <div
-        className="flex items-center justify-between gap-2 cursor-pointer select-none"
+        className={`flex items-center justify-between gap-2 cursor-pointer select-none rounded-xl px-2 py-1 transition-colors ${expanded ? "bg-muted/40" : "hover:bg-muted/30"}`}
         onClick={() => setExpanded((v) => !v)}
         role="button"
         tabIndex={0}
@@ -35,11 +35,12 @@ export default function HistoryDay({
         }}
       >
         <div className="flex items-center gap-2">
-          <div className="text-sm font-semibold tracking-tight">{formatPrettyDate(dateISO)}</div>
-          <span className="text-xs text-muted-foreground">{expanded ? "▼" : "▶"}</span>
+          <div className={`text-sm tracking-tight ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
+            {formatPrettyDate(dateISO)}
+          </div>
         </div>
 
-        <div className="text-xs text-muted-foreground">
+        <div className={`text-xs transition-colors ${expanded ? "text-foreground/70" : "text-muted-foreground"}`}>
           {items.length} entr{items.length === 1 ? "y" : "ies"}
         </div>
       </div>
