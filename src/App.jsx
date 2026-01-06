@@ -93,6 +93,7 @@ function getGoalForPeriod(habit, period) {
   return goals[p] || 0;
 }
 
+
 // =====================
 // Local storage state
 // =====================
@@ -464,7 +465,7 @@ async function loadCloudForYear({ userId, year }) {
 
   const habitsRes = await supabase
     .from("habits")
-    .select("id,name,type,unit,decimals,goals,goal_daily,goal_period,sort_index,created_at")
+    .select("id,name,type,unit,decimals,goals,sort_index,created_at")
     .eq("user_id", userId)
     .order("sort_index", { ascending: true })
     .order("created_at", { ascending: true });
@@ -1120,7 +1121,7 @@ export default function HabitTrackerMVP() {
         goal_period: "daily",
       };
 
-      let res = await supabase
+      const res = await supabase
         .from("habits")
         .update(row)
         .eq("user_id", userId)
@@ -1150,6 +1151,7 @@ export default function HabitTrackerMVP() {
       const row = habitToInsertRow(newHabit, userId, sortIndex);
 
       const res = await supabase.from("habits").insert(row);
+
       if (res.error) {
         setCloudError(res.error.message || "Failed to add habit");
       } else {
