@@ -838,6 +838,7 @@ function PublicView({ token }) {
   const [error, setError] = useState("");
   const [publicState, setPublicState] = useState({ habits: [], entries: {} });
   const [focusedHabitId, setFocusedHabitId] = useState("");
+  const [expandedDates, setExpandedDates] = useState(() => ({}));
 
   const habits = useMemo(() => publicState.habits || [], [publicState.habits]);
   const entries = useMemo(() => publicState.entries || {}, [publicState.entries]);
@@ -992,25 +993,49 @@ function PublicView({ token }) {
                       return { id: h.id, label: h.name, value: entryToDisplay(h, e) };
                     })
                     .filter(Boolean);
-
+                  const expanded = Boolean(expandedDates[d]);
                   return (
                     <div key={d} className="rounded-2xl bg-background/60 shadow-sm p-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <div className="text-sm font-semibold tracking-tight">{formatPrettyDate(d)}</div>
-                        <div className="text-xs text-muted-foreground">{items.length} item{items.length === 1 ? "" : "s"}</div>
-                      </div>
-                      {items.length ? (
-                        <div className="mt-2 grid gap-1">
-                          {items.map((it) => (
-                            <div key={it.id} className="flex items-center justify-between gap-3 text-sm">
-                              <div className="text-muted-foreground">{it.label}</div>
-                              <div className="tabular-nums">{it.value}</div>
-                            </div>
-                          ))}
+                      <div
+                        className={`flex items-center justify-between gap-3 cursor-pointer select-none rounded-xl px-2 py-1 transition-colors ${expanded ? "bg-muted/40" : "hover:bg-muted/30"}`}
+                        onClick={() =>
+                          setExpandedDates((prev) => ({
+                            ...(prev || {}),
+                            [d]: !Boolean(prev?.[d]),
+                          }))
+                        }
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            setExpandedDates((prev) => ({
+                              ...(prev || {}),
+                              [d]: !Boolean(prev?.[d]),
+                            }));
+                          }
+                        }}
+                      >
+                        <div className={`text-sm tracking-tight ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
+                          {formatPrettyDate(d)}
                         </div>
-                      ) : (
-                        <div className="mt-2 text-sm text-muted-foreground">No entries</div>
-                      )}
+                        <div className={`text-xs transition-colors ${expanded ? "text-foreground/70" : "text-muted-foreground"}`}>
+                          {items.length} item{items.length === 1 ? "" : "s"}
+                        </div>
+                      </div>
+                      {expanded ? (
+                        items.length ? (
+                          <div className="mt-2 grid gap-1">
+                            {items.map((it) => (
+                              <div key={it.id} className="flex items-center justify-between gap-3 text-sm">
+                                <div className="text-muted-foreground">{it.label}</div>
+                                <div className="tabular-nums">{it.value}</div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="mt-2 text-sm text-muted-foreground">No entries</div>
+                        )
+                      ) : null}
                     </div>
                   );
                 })
