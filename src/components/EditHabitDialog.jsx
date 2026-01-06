@@ -59,8 +59,8 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
                 <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-sm text-muted-foreground">Unit</Label>
-                <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
+                <Label className="text-xs text-muted-foreground">Unit</Label>
+                <Input className="h-11 text-base" value={unit} onChange={(e) => setUnit(e.target.value)} />
               </div>
             </div>
           ) : (
@@ -72,7 +72,7 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
 
           <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-sm text-muted-foreground">Goal</Label>
+              <Label className="text-xs text-muted-foreground">Goal</Label>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
                 <Switch
@@ -90,7 +90,7 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
                 <div className="grid gap-1.5">
                   <Label className="text-xs text-muted-foreground">Period</Label>
                   <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-11 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -106,7 +106,7 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
                   <Label className="text-xs text-muted-foreground">Goal</Label>
                   <Input
                     type="number"
-                    className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-11 text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={goalValue}
                     onChange={(e) => setGoalValue(e.target.value)}
                   />
