@@ -331,7 +331,28 @@ function buildHabitSeries(habit, entries, year) {
   // Goal setup
   const goal = clampNumber(habit.goalDaily || 0);
   const goalPeriod = habit.goalPeriod || "daily";
-  const goalPerDay = goal > 0 ? (goalPeriod === "weekly" ? goal / 7 : goal) : 0;
+
+  const daysInYear = (y) => {
+    const start = new Date(y, 0, 1);
+    const end = new Date(y + 1, 0, 1);
+    return Math.round((end - start) / (1000 * 60 * 60 * 24));
+  };
+
+  const daysInMonth = (y, m0) => {
+    // m0 is 0-indexed month
+    return new Date(y, m0 + 1, 0).getDate();
+  };
+
+  const goalPerDayForDate = (dateObj) => {
+    if (!(goal > 0)) return 0;
+
+    if (goalPeriod === "weekly") return goal / 7;
+    if (goalPeriod === "monthly") return goal / daysInMonth(dateObj.getFullYear(), dateObj.getMonth());
+    if (goalPeriod === "yearly") return goal / daysInYear(dateObj.getFullYear());
+
+    // daily
+    return goal;
+  };
 
   let actualCum = 0;
   let goalCum = 0;
@@ -345,7 +366,7 @@ function buildHabitSeries(habit, entries, year) {
     const daily = entryToNumber(habit, e, 0);
 
     actualCum += daily;
-    if (goal > 0) goalCum += goalPerDay;
+    if (goal > 0) goalCum += goalPerDayForDate(d);
 
     out.push({
       date: iso,
