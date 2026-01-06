@@ -645,10 +645,14 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
                     const labelKey = String(labelText || "").toLowerCase();
                     const rawKey = String(p.dataKey || p.name || "").toLowerCase();
 
-                    const dotColor =
-                      p.color ||
-                      p.stroke ||
-                      (labelKey === "goal" || rawKey.includes("goal") ? "#ef4444" : labelKey === "actual" || rawKey.includes("actual") ? "#3b82f6" : "currentColor");
+                    const forced =
+                      labelKey === "goal" || rawKey.includes("goal")
+                        ? "#ef4444"
+                        : labelKey === "actual" || rawKey.includes("actual")
+                          ? "#3b82f6"
+                          : null;
+
+                    const dotColor = forced || p.color || p.stroke || "currentColor";
 
                     return (
                       <span
