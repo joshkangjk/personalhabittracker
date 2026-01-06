@@ -12,15 +12,29 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [name, setName] = useState(() => habit.name || "");
   const [unit, setUnit] = useState(() => habit.unit || "");
-  const [goalValue, setGoalValue] = useState(() => String(habit.goalDaily ?? 0));
-  const [goalPeriod, setGoalPeriod] = useState(() => habit.goalPeriod || "daily");
-  const [goalEnabled, setGoalEnabled] = useState(() => Boolean((habit.goalDaily ?? 0) > 0));
+
+  const initialGoals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
+  const goalOrder = ["daily", "weekly", "monthly", "yearly"];
+  const initialPeriod =
+    (habit.goalPeriod && goalOrder.includes(habit.goalPeriod) ? habit.goalPeriod : null) ||
+    goalOrder.find((p) => Number(initialGoals?.[p] ?? 0) > 0) ||
+    "daily";
+  const initialValue = Number(initialGoals?.[initialPeriod] ?? 0);
+
+  const [goalValue, setGoalValue] = useState(() => (initialValue > 0 ? String(initialValue) : ""));
+  const [goalPeriod, setGoalPeriod] = useState(() => initialPeriod);
+  const [goalEnabled, setGoalEnabled] = useState(() => Boolean(initialValue > 0));
 
   function save() {
+    const baseGoals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
+    const nextGoals =
+      goalEnabled && goalValue !== "" && Number(goalValue) > 0
+        ? { ...baseGoals, [goalPeriod]: clampNumber(goalValue) }
+        : {};
+
     const patch = {
       name: name.trim() || habit.name,
-      goalDaily: goalEnabled && goalValue !== "" ? clampNumber(goalValue) : 0,
-      goalPeriod,
+      goals: nextGoals,
     };
     if (habit.type === "number") patch.unit = unit.trim() || habit.unit || "value";
     onSave(patch);

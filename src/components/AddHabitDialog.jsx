@@ -29,13 +29,17 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
     const cleanName = name.trim();
     if (!cleanName) return;
 
+    const goals =
+      goalEnabled && goalDaily !== "" && Number(goalDaily) > 0
+        ? { [goalPeriod]: clampNumber(goalDaily) }
+        : {};
+
     const h = {
       id: uuid(),
       name: cleanName,
       unit: type === "number" ? unit.trim() || "value" : undefined,
       type,
-      goalDaily: goalEnabled && goalDaily !== "" ? clampNumber(goalDaily) : 0,
-      goalPeriod,
+      goals,
     };
 
     onAdd(h);
