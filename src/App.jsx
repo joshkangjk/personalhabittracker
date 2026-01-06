@@ -499,9 +499,18 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
       <div className="mt-1 space-y-1">
         {[...payload]
           .filter((p) => p && p.value !== null && p.value !== undefined)
+          .reduce((acc, p) => {
+            const k = String(p.dataKey || p.name || "");
+            if (!k) return acc;
+            if (acc.seen.has(k)) return acc;
+            acc.seen.add(k);
+            acc.items.push(p);
+            return acc;
+          }, { items: [], seen: new Set() })
+          .items
           .sort((a, b) => {
             const order = (k) => (k === "actualCum" ? 0 : k === "goalCum" ? 1 : 2);
-            return order(a.dataKey) - order(b.dataKey);
+            return order(String(a.dataKey)) - order(String(b.dataKey));
           })
           .map((p) => {
             const name = p.dataKey || p.name;
