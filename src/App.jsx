@@ -768,28 +768,32 @@ function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
   }
 
   return (
-    <div className="space-y-2">
-      {items.map(({ habit, stats }) => (
-        <button
-          key={habit.id}
-          onClick={() => onSelectHabit?.(habit.id)}
-          className={`w-full text-left rounded-2xl bg-background/50 border border-border/60 p-3 hover:bg-accent/10 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
-            selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/10" : ""
-          }`}
-        >
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="font-medium">{habit.name}</span>
+    <div className="rounded-2xl bg-background/50 border border-border/60 overflow-hidden divide-y divide-border/60">
+      {items.map(({ habit, stats }) => {
+        const selected = selectedHabitId === habit.id;
+
+        return (
+          <button
+            key={habit.id}
+            onClick={() => onSelectHabit?.(habit.id)}
+            className={`group w-full text-left px-4 py-3 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-muted/30 ${
+              selected ? "bg-accent/10" : "hover:bg-accent/10 active:bg-accent/15"
+            }`}
+          >
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{habit.name}</span>
+              </div>
+              <div className="text-sm">
+                <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
+              </div>
             </div>
-            <div className="text-sm">
-              <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
+            <div className="mt-1 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
             </div>
-          </div>
-          <div className="mt-1.5 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
-          </div>
-        </button>
-      ))}
+          </button>
+        );
+      })}
     </div>
   );
 }
