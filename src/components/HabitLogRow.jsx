@@ -36,14 +36,23 @@ export default function HabitLogRow({
     if (!g) return "";
     const period = habit.goalPeriod || "daily";
 
+    const periodLabel =
+      period === "weekly"
+        ? "per week"
+        : period === "monthly"
+          ? "per month"
+          : period === "yearly"
+            ? "per year"
+            : "per day";
+
     if (habit.type === "checkbox") {
-      return period === "weekly" ? `Goal: ${Math.round(g)}x per week` : "Goal: Daily";
+      return `Goal: ${Math.round(g)}x ${periodLabel}`;
     }
 
     const unit = habit.unit ? ` ${habit.unit}` : "";
     const dec = habitDecimals(habit);
     const amount = formatNumberWithDecimals(g, dec);
-    return period === "weekly" ? `Goal: ${amount}${unit} per week` : `Goal: ${amount}${unit} per day`;
+    return `Goal: ${amount}${unit} ${periodLabel}`;
   }, [habit, habitDecimals, formatNumberWithDecimals]);
 
   const save = useCallback(() => {
