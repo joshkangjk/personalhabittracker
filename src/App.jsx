@@ -194,7 +194,7 @@ function isoRangeForYear(year) {
 
 function buildYearOptions() {
   const y = new Date().getFullYear();
-  return [y - 1, y, y + 1];
+  return [y, y + 1];
 }
 
 function getPublicTokenFromPath() {
