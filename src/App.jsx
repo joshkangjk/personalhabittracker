@@ -73,6 +73,26 @@ function formatNumberWithDecimals(n, decimals) {
     .replace(/(\.\d)0$/, "$1");
 }
 
+function normalizeGoals(goals) {
+  const g = goals && typeof goals === "object" ? goals : {};
+  const pick = (k) => {
+    const v = Number(g[k] ?? 0);
+    return Number.isFinite(v) && v > 0 ? v : 0;
+  };
+  return {
+    daily: pick("daily"),
+    weekly: pick("weekly"),
+    monthly: pick("monthly"),
+    yearly: pick("yearly"),
+  };
+}
+
+function getGoalForPeriod(habit, period) {
+  const goals = normalizeGoals(habit?.goals);
+  const p = ["daily", "weekly", "monthly", "yearly"].includes(period) ? period : "daily";
+  return goals[p] || 0;
+}
+
 // =====================
 // Local storage state
 // =====================
@@ -188,20 +208,19 @@ function defaultState() {
         unit: "reps",
         decimals: 0,
         type: "number",
-        goalDaily: 50,
-        goalPeriod: "daily",
+        goals: { daily: 50 },
       },
       {
         id: uuid(),
         name: "Read",
         type: "checkbox",
-        goalDaily: 1,
-        goalPeriod: "daily",
+        goals: { daily: 1 },
       },
     ],
     entries: {},
     ui: {
       selectedYear: year,
+      trendHorizon: "yearly",
     },
   };
 }
@@ -212,13 +231,30 @@ function ensureStateShape(s) {
   if (!s.entries || typeof s.entries !== "object") s.entries = {};
   if (!s.ui || typeof s.ui !== "object") s.ui = { selectedYear: new Date().getFullYear() };
   if (!s.ui.selectedYear) s.ui.selectedYear = new Date().getFullYear();
+  if (!s.ui.trendHorizon) s.ui.trendHorizon = "yearly";
+  if (!["daily", "weekly", "monthly", "yearly"].includes(s.ui.trendHorizon)) s.ui.trendHorizon = "yearly";
   const cy = new Date().getFullYear();
   // Allow browsing past years; only guard against obviously invalid values.
   if (!Number.isFinite(Number(s.ui.selectedYear))) s.ui.selectedYear = cy;
   s.habits = (s.habits || []).map((h) => {
-    if (h?.type !== "number") return h;
-    if (h.decimals === undefined) return { ...h, decimals: 0 };
-    return h;
+    if (!h || typeof h !== "object") return h;
+
+    // migrate legacy fields -> goals
+    const legacyGoal = Number(h.goalDaily ?? 0);
+    const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(h.goalPeriod) ? h.goalPeriod : "daily";
+
+    let goals = normalizeGoals(h.goals);
+    const hasAny = goals.daily || goals.weekly || goals.monthly || goals.yearly;
+
+    if (!hasAny && legacyGoal > 0) {
+      goals = { ...goals, [legacyPeriod]: legacyGoal };
+    }
+
+    if (h.type !== "number") return { ...h, goals };
+
+    if (h.decimals === undefined) return { ...h, decimals: 0, goals };
+
+    return { ...h, goals };
   });
   return s;
 }
@@ -317,7 +353,7 @@ function habitStats(habit, entries, year) {
   };
 }
 
-function buildHabitSeries(habit, entries, year) {
+function buildHabitSeries(habit, entries, year, horizon = "yearly") {
   // Start at Jan 1 of the selected year (not first log date)
   const start = new Date(year, 0, 1);
 
@@ -328,31 +364,25 @@ function buildHabitSeries(habit, entries, year) {
       ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
       : new Date(year, 11, 31);
 
-  // Goal setup
-  const goal = clampNumber(habit.goalDaily || 0);
-  const goalPeriod = habit.goalPeriod || "daily";
+    // Goal setup (multi-horizon)
+    const period = ["daily", "weekly", "monthly", "yearly"].includes(horizon) ? horizon : "yearly";
+    const goal = clampNumber(getGoalForPeriod(habit, period));
 
-  const daysInYear = (y) => {
-    const start = new Date(y, 0, 1);
-    const end = new Date(y + 1, 0, 1);
-    return Math.round((end - start) / (1000 * 60 * 60 * 24));
-  };
+    const daysInYear = (y) => {
+      const start = new Date(y, 0, 1);
+      const end = new Date(y + 1, 0, 1);
+      return Math.round((end - start) / (1000 * 60 * 60 * 24));
+    };
 
-  const daysInMonth = (y, m0) => {
-    // m0 is 0-indexed month
-    return new Date(y, m0 + 1, 0).getDate();
-  };
+    const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
 
-  const goalPerDayForDate = (dateObj) => {
-    if (!(goal > 0)) return 0;
-
-    if (goalPeriod === "weekly") return goal / 7;
-    if (goalPeriod === "monthly") return goal / daysInMonth(dateObj.getFullYear(), dateObj.getMonth());
-    if (goalPeriod === "yearly") return goal / daysInYear(dateObj.getFullYear());
-
-    // daily
-    return goal;
-  };
+    const goalPerDayForDate = (dateObj) => {
+      if (!(goal > 0)) return 0;
+      if (period === "daily") return goal;
+      if (period === "weekly") return goal / 7;
+      if (period === "monthly") return goal / daysInMonth(dateObj.getFullYear(), dateObj.getMonth());
+      return goal / daysInYear(dateObj.getFullYear());
+    };
 
   let actualCum = 0;
   let goalCum = 0;
@@ -383,14 +413,21 @@ function buildHabitSeries(habit, entries, year) {
 // Supabase mappers + loading
 // =====================
 function habitFromRow(r) {
+  const legacyGoal = Number(r.goal_daily ?? 0);
+  const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(r.goal_period) ? r.goal_period : "daily";
+
+  const cloudGoals = normalizeGoals(r.goals);
+  const hasAny = cloudGoals.daily || cloudGoals.weekly || cloudGoals.monthly || cloudGoals.yearly;
+
+  const mergedGoals = hasAny ? cloudGoals : legacyGoal > 0 ? { ...cloudGoals, [legacyPeriod]: legacyGoal } : cloudGoals;
+
   return {
     id: r.id,
     name: r.name,
     type: r.type,
     unit: r.unit ?? undefined,
     decimals: r.decimals ?? 0,
-    goalDaily: Number(r.goal_daily ?? 0),
-    goalPeriod: r.goal_period || "daily",
+    goals: mergedGoals,
     sortIndex: r.sort_index ?? 0,
   };
 }
@@ -403,8 +440,10 @@ function habitToInsertRow(h, userId, sortIndex) {
     type: h.type,
     unit: h.type === "number" ? (h.unit ?? null) : null,
     decimals: h.type === "number" ? Number(h.decimals ?? 0) : 0,
-    goal_daily: Number(h.goalDaily ?? 0),
-    goal_period: h.goalPeriod || "daily",
+    goals: normalizeGoals(h.goals),
+    // legacy columns kept for backward compatibility
+    goal_daily: Number(getGoalForPeriod(h, "daily") ?? 0),
+    goal_period: "daily",
     sort_index: Number.isFinite(Number(sortIndex)) ? Number(sortIndex) : 0,
   };
 }
@@ -425,7 +464,7 @@ async function loadCloudForYear({ userId, year }) {
 
   const habitsRes = await supabase
     .from("habits")
-    .select("id,name,type,unit,decimals,goal_daily,goal_period,sort_index,created_at")
+    .select("id,name,type,unit,decimals,goals,goal_daily,goal_period,sort_index,created_at")
     .eq("user_id", userId)
     .order("sort_index", { ascending: true })
     .order("created_at", { ascending: true });
@@ -588,7 +627,7 @@ function HabitStatsGrid({ habit, stats }) {
   );
 }
 
-function TrendChart({ series, habit, year, gradientPrefix }) {
+function TrendChart({ series, habit, year, gradientPrefix, horizon = "yearly" }) {
   if (!habit) return null;
 
   return (
@@ -640,7 +679,7 @@ function TrendChart({ series, habit, year, gradientPrefix }) {
               isAnimationActive
             />
             <Line type="monotone" dataKey="actualCum" dot={false} activeDot={{ r: 4 }} strokeWidth={2} isAnimationActive />
-            {habit.goalDaily ? (
+            {getGoalForPeriod(habit, horizon) > 0 ? (
               <Line
                 type="monotone"
                 dataKey="goalCum"
@@ -753,7 +792,7 @@ function PublicView({ token }) {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeries(focusedHabit, entries, year);
+    return buildHabitSeries(focusedHabit, entries, year, "yearly");
   }, [focusedHabit, entries, year]);
 
   const focusedStats = useMemo(() => {
@@ -860,6 +899,7 @@ function PublicView({ token }) {
                       habit={focusedHabit}
                       year={year}
                       gradientPrefix="public"
+                      horizon="yearly"
                     />
                   </>
                 ) : (
@@ -1048,6 +1088,12 @@ export default function HabitTrackerMVP() {
 
   const selectedYear = state.ui.selectedYear;
 
+  const trendHorizon = state.ui.trendHorizon;
+
+  const handleTrendHorizonChange = useCallback((v) => {
+    setState((s) => ({ ...s, ui: { ...s.ui, trendHorizon: v } }));
+  }, []);
+
   const updateHabit = useCallback(
     async (habitId, patch) => {
       const userId = session?.user?.id;
@@ -1068,17 +1114,23 @@ export default function HabitTrackerMVP() {
         name: merged.name,
         unit: merged.type === "number" ? (merged.unit ?? null) : null,
         decimals: merged.type === "number" ? Number(merged.decimals ?? 0) : 0,
-        goal_daily: Number(merged.goalDaily ?? 0),
-        goal_period: merged.goalPeriod || "daily",
+        goals: normalizeGoals(merged.goals),
+        // legacy columns kept for backward compatibility
+        goal_daily: Number(getGoalForPeriod(merged, "daily") ?? 0),
+        goal_period: "daily",
       };
 
-      const res = await supabase
+      let res = await supabase
         .from("habits")
         .update(row)
         .eq("user_id", userId)
         .eq("id", habitId);
 
-      if (res.error) setCloudError(res.error.message || "Failed to update habit");
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to update habit");
+      } else {
+        setCloudError("");
+      }
     },
     [session?.user?.id]
   );
@@ -1098,7 +1150,11 @@ export default function HabitTrackerMVP() {
       const row = habitToInsertRow(newHabit, userId, sortIndex);
 
       const res = await supabase.from("habits").insert(row);
-      if (res.error) setCloudError(res.error.message || "Failed to add habit");
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to add habit");
+      } else {
+        setCloudError("");
+      }
     },
     [session?.user?.id]
   );
@@ -1125,7 +1181,11 @@ export default function HabitTrackerMVP() {
         .eq("user_id", userId)
         .eq("id", habitId);
 
-      if (res.error) setCloudError(res.error.message || "Failed to delete habit");
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to delete habit");
+      } else {
+        setCloudError("");
+      }
     },
     [session?.user?.id]
   );
@@ -1171,6 +1231,8 @@ export default function HabitTrackerMVP() {
         return;
       }
 
+      setCloudError("");
+
       // persist decimals upgrade if needed
       if (habit?.type === "number") {
         const detected = Math.min(6, Math.max(0, countDecimalsFromValue(value)));
@@ -1182,7 +1244,11 @@ export default function HabitTrackerMVP() {
             .update({ decimals: nextDec })
             .eq("user_id", userId)
             .eq("id", habit.id);
-          if (upd.error) setCloudError(upd.error.message || "Failed to update decimals");
+          if (upd.error) {
+            setCloudError(upd.error.message || "Failed to update decimals");
+          } else {
+            setCloudError("");
+          }
         }
       }
     },
@@ -1203,7 +1269,11 @@ export default function HabitTrackerMVP() {
         .eq("date_iso", dateISO)
         .eq("habit_id", habitId);
 
-      if (res.error) setCloudError(res.error.message || "Failed to remove entry");
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to remove entry");
+      } else {
+        setCloudError("");
+      }
     },
     [session?.user?.id]
   );
@@ -1255,7 +1325,11 @@ export default function HabitTrackerMVP() {
       }));
 
       const res = await supabase.from("habits").upsert(updates, { onConflict: "id" });
-      if (res.error) setCloudError(res.error.message || "Failed to save order");
+      if (res.error) {
+        setCloudError(res.error.message || "Failed to save order");
+      } else {
+        setCloudError("");
+      }
     },
     [session?.user?.id]
   );
@@ -1481,8 +1555,8 @@ export default function HabitTrackerMVP() {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeries(focusedHabit, state.entries, selectedYear);
-  }, [focusedHabit, state.entries, selectedYear]);
+    return buildHabitSeries(focusedHabit, state.entries, selectedYear, trendHorizon);
+  }, [focusedHabit, state.entries, selectedYear, trendHorizon]);
 
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
@@ -1668,6 +1742,20 @@ export default function HabitTrackerMVP() {
                   <p className="text-sm text-muted-foreground">
                     {focusedHabit ? `Showing: ${focusedHabit.name}` : "Pick a habit"}
                   </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Goal</Label>
+                    <Select value={trendHorizon} onValueChange={handleTrendHorizonChange}>
+                      <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="daily">Daily</SelectItem>
+                        <SelectItem value="weekly">Weekly</SelectItem>
+                        <SelectItem value="monthly">Monthly</SelectItem>
+                        <SelectItem value="yearly">Yearly</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {focusedHabit ? (
@@ -1679,6 +1767,7 @@ export default function HabitTrackerMVP() {
                         habit={focusedHabit}
                         year={selectedYear}
                         gradientPrefix="private"
+                        horizon={trendHorizon}
                       />
                       <div className="h-2" />
                     </>
