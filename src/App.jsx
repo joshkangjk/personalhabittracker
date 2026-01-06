@@ -637,6 +637,76 @@ function TrendChart({ series, habit, year, gradientPrefix }) {
   );
 }
 
+function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
+  if (!items || items.length === 0) {
+    return <div className="text-sm text-muted-foreground">No habits yet.</div>;
+  }
+
+  return (
+    <div className="space-y-2">
+      {items.map(({ habit, stats }) => (
+        <button
+          key={habit.id}
+          onClick={() => onSelectHabit?.(habit.id)}
+          className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+            selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
+          }`}
+        >
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{habit.name}</span>
+            </div>
+            <div className="text-sm">
+              <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
+            </div>
+          </div>
+          <div className="mt-2 text-xs text-muted-foreground">
+            <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function YearPicker({ value, onChange, options, triggerClassName, labelClassName }) {
+  return (
+    <div className="flex items-center gap-2">
+      <Label className={labelClassName || "text-xs text-muted-foreground"}>Year</Label>
+      <Select value={String(value)} onValueChange={onChange}>
+        <SelectTrigger
+          className={
+            triggerClassName ||
+            "w-[120px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30"
+          }
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {(options || []).map((y) => (
+            <SelectItem key={y} value={String(y)}>
+              {y}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+function ShareStatus({ shareError, shareOk }) {
+  return (
+    <>
+      {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
+      {shareOk ? (
+        <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+          <CheckCircle2 className="h-3.5 w-3.5" /> Copied
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 function PublicView({ token }) {
   const [year] = useState(new Date().getFullYear());
   const [loading, setLoading] = useState(true);
@@ -744,33 +814,11 @@ function PublicView({ token }) {
                 <p className="text-sm text-muted-foreground">Totals for {year}.</p>
               </CardHeader>
               <CardContent className="space-y-3">
-                {yearSummary.length === 0 ? (
-                  <div className="text-sm text-muted-foreground">No habits yet.</div>
-                ) : (
-                  <div className="space-y-2">
-                    {yearSummary.map(({ habit, stats }) => (
-                      <button
-                        key={habit.id}
-                        onClick={() => setFocusedHabitId(habit.id)}
-                        className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
-                          effectiveFocusedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
-                        }`}
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{habit.name}</span>
-                          </div>
-                          <div className="text-sm">
-                            <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
-                          </div>
-                        </div>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <YearSummaryList
+                  items={yearSummary}
+                  selectedHabitId={effectiveFocusedHabitId}
+                  onSelectHabit={(id) => setFocusedHabitId(id)}
+                />
               </CardContent>
             </Card>
 
@@ -958,10 +1006,6 @@ export default function HabitTrackerMVP() {
     a.remove();
     URL.revokeObjectURL(url);
   }, [state]);
-
-  const handleExport = useCallback(() => {
-    exportJSON();
-  }, [exportJSON]);
 
   const handleSignOut = useCallback(() => {
     supabase.auth.signOut();
@@ -1451,30 +1495,13 @@ export default function HabitTrackerMVP() {
 
           {/* Desktop controls */}
           <div className="hidden md:flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Year</Label>
-              <Select
-                value={String(selectedYear)}
-                onValueChange={handleYearChange}
-              >
-                <SelectTrigger className="w-[120px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearOptions.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <YearPicker value={selectedYear} onChange={handleYearChange} options={yearOptions} />
 
             <div className="flex items-center gap-2">
               <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
                 {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
               </Button>
-              <Button onClick={handleExport} variant="secondary" className="gap-2">
+              <Button onClick={exportJSON} variant="secondary" className="gap-2">
                 <Download className="h-4 w-4" /> Export
               </Button>
               <Button variant="ghost" onClick={handleSignOut}>
@@ -1482,12 +1509,7 @@ export default function HabitTrackerMVP() {
               </Button>
             </div>
 
-            {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
-            {shareOk ? (
-              <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Copied
-              </div>
-            ) : null}
+            <ShareStatus shareError={shareError} shareOk={shareOk} />
           </div>
 
           {/* Mobile controls */}
@@ -1504,36 +1526,20 @@ export default function HabitTrackerMVP() {
                 </DialogHeader>
 
                 <div className="grid gap-4">
-                  <div className="grid gap-2">
-                    <Label className="text-sm text-muted-foreground">Year</Label>
-                    <Select
-                      value={String(selectedYear)}
-                      onValueChange={handleYearChange}
-                    >
-                      <SelectTrigger className="rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {yearOptions.map((y) => (
-                          <SelectItem key={y} value={String(y)}>
-                            {y}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <YearPicker
+                    value={selectedYear}
+                    onChange={handleYearChange}
+                    options={yearOptions}
+                    triggerClassName="rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30"
+                    labelClassName="text-sm text-muted-foreground"
+                  />
 
                   <div className="grid gap-2">
                     <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
                       {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share link
                     </Button>
 
-                    {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
-                    {shareOk ? (
-                      <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Copied
-                      </div>
-                    ) : null}
+                    <ShareStatus shareError={shareError} shareOk={shareOk} />
 
                     <Button onClick={handleMobileExport} variant="secondary" className="gap-2">
                       <Download className="h-4 w-4" /> Export
@@ -1625,31 +1631,13 @@ export default function HabitTrackerMVP() {
                 <CardContent className="space-y-3">
                   {yearSummary.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
-                  ) : (
-                    <div className="space-y-2">
-                      {yearSummary.map(({ habit, stats }) => (
-                        <button
-                          key={habit.id}
-                          onClick={() => setFocusedHabitId(habit.id)}
-                          className={`w-full text-left rounded-2xl bg-background/60 shadow-sm p-3 hover:bg-accent/20 transition-colors active:scale-[0.99] transition-transform focus:outline-none focus:ring-2 focus:ring-muted/30 ${
-                            effectiveFocusedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/15" : ""
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{habit.name}</span>
-                            </div>
-                            <div className="text-sm">
-                              <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
-                            </div>
-                          </div>
-                          <div className="mt-2 text-xs text-muted-foreground">
-                            <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  )}
+                    ) : (
+                      <YearSummaryList
+                        items={yearSummary}
+                        selectedHabitId={effectiveFocusedHabitId}
+                        onSelectHabit={(id) => setFocusedHabitId(id)}
+                      />
+                    )}
                 </CardContent>
               </Card>
 
