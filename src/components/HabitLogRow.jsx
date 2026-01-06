@@ -33,6 +33,20 @@ export default function HabitLogRow({
 
   const hasEntry = entry !== null && entry !== undefined;
 
+  const [committing, setCommitting] = useState(false);
+
+  const commitWithDelay = useCallback(
+    (nextValue, commitFn) => {
+      if (committing) return;
+      setCommitting(true);
+      setTimeout(() => {
+        commitFn(nextValue);
+        setCommitting(false);
+      }, 120);
+    },
+    [committing]
+  );
+
   const goalText = useMemo(() => {
     const goals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
     // Prefer the most coarse goal if multiple keys exist (e.g., after switching period in the edit dialog)
@@ -76,17 +90,17 @@ export default function HabitLogRow({
       const current = value === "" || value === null || value === undefined ? 0 : clampNumber(value);
       const next = Math.max(0, current + delta);
       setValue(next);
-      onLog(next);
+      commitWithDelay(next, onLog);
     },
-    [habit.type, onLog, value, clampNumber]
+    [habit.type, value, clampNumber, commitWithDelay]
   );
 
   const handleCheckboxChange = useCallback(
     (v) => {
       setValue(v);
-      onLog(Boolean(v));
+      commitWithDelay(Boolean(v), onLog);
     },
-    [onLog]
+    [commitWithDelay]
   );
 
   const handleNumberChange = useCallback((e) => setValue(e.target.value), []);
@@ -150,7 +164,7 @@ export default function HabitLogRow({
         >
           {habit.type === "checkbox" ? (
             <div
-              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 transition-opacity ${
+              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 transition-opacity transition-transform active:scale-[0.98] ${
                 hasEntry ? "opacity-70 hover:opacity-90" : ""
               } ${isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"}`}
             >
@@ -162,7 +176,9 @@ export default function HabitLogRow({
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 px-0 rounded-xl transition-opacity ${hasEntry ? "opacity-60 hover:opacity-80" : ""}`}
+                className={`h-9 w-9 px-0 rounded-xl transition-all active:scale-95 ${
+                  hasEntry ? "opacity-60 hover:opacity-80" : ""
+                } ${committing ? "pointer-events-none opacity-50" : ""}`}
                 onClick={() => bump(-1)}
               >
                 −
@@ -183,7 +199,9 @@ export default function HabitLogRow({
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 px-0 rounded-xl transition-opacity ${hasEntry ? "opacity-60 hover:opacity-80" : ""}`}
+                className={`h-9 w-9 px-0 rounded-xl transition-all active:scale-95 ${
+                  hasEntry ? "opacity-60 hover:opacity-80" : ""
+                } ${committing ? "pointer-events-none opacity-50" : ""}`}
                 onClick={() => bump(1)}
               >
                 +
