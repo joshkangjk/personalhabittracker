@@ -641,7 +641,15 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
             return (
               <div key={String(name)} className="flex items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                  <span className="h-2 w-2 rounded-full" style={{ background: p.color || "currentColor" }} />
+                  {(() => {
+                    const k = String(p.dataKey || p.name || "");
+                    const dotColor =
+                      p.color ||
+                      p.stroke ||
+                      (k === "goalCum" ? "#ef4444" : k === "actualCum" ? "#3b82f6" : "currentColor");
+
+                    return <span className="h-2 w-2 rounded-full" style={{ background: dotColor }} />;
+                  })()}
                   <span>{labelText}</span>
                 </div>
                 <span className="tabular-nums text-foreground">{valueText}</span>
