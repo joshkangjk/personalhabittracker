@@ -138,7 +138,7 @@ export default function HabitLogRow({
   return (
     <div
       data-habit-id={habit.id}
-      className={`rounded-2xl bg-background/60 shadow-sm p-2 md:p-3 transition-colors hover:bg-accent/15 ${
+      className={`rounded-2xl bg-background/60 shadow-sm p-2.5 md:p-3 transition-colors hover:bg-accent/15 ${
         dragging ? "opacity-60" : ""
       }`}
       draggable={!isMobile}
@@ -147,8 +147,8 @@ export default function HabitLogRow({
       onDrop={isMobile ? undefined : onDrop}
       onDragEnd={isMobile ? undefined : onDragEnd}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
-        <div className="space-y-1">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 md:gap-3">
+        <div className="space-y-0.5">
           <div className="flex items-center gap-2 flex-wrap">
             <div className="text-base font-medium tracking-tight">{habit.name}</div>
           </div>
@@ -156,7 +156,7 @@ export default function HabitLogRow({
         </div>
 
         <div
-          className={`rounded-2xl bg-background/60 shadow-sm px-2 py-2 ${
+          className={`rounded-2xl bg-background/60 shadow-sm px-2 py-1.5 ${
             isMobile
               ? "grid grid-cols-[1fr,auto] items-center gap-2"
               : "flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap"
@@ -164,7 +164,7 @@ export default function HabitLogRow({
         >
           {habit.type === "checkbox" ? (
             <div
-              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 transition-opacity transition-transform active:scale-[0.98] ${
+              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-1.5 transition-opacity transition-transform active:scale-[0.98] ${
                 hasEntry ? "opacity-70 hover:opacity-90" : ""
               } ${isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"}`}
             >
@@ -172,7 +172,7 @@ export default function HabitLogRow({
               <span className="text-sm">Done</span>
             </div>
           ) : (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <Button
                 type="button"
                 variant="ghost"
@@ -211,7 +211,7 @@ export default function HabitLogRow({
 
           <div className="flex items-center justify-end gap-2">
             <div
-              className={`rounded-xl bg-background/60 shadow-sm px-2 py-2 text-muted-foreground ${
+              className={`rounded-xl bg-background/60 shadow-sm px-2 py-1.5 text-muted-foreground ${
                 isMobile ? "" : "cursor-grab active:cursor-grabbing"
               } ${touchDragging ? "opacity-60" : ""}`}
               title={isMobile ? "Press and drag to reorder" : "Drag to reorder"}
