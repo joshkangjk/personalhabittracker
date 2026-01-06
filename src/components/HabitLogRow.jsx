@@ -31,6 +31,8 @@ export default function HabitLogRow({
     return entry.value;
   });
 
+  const hasEntry = entry !== null && entry !== undefined;
+
   const goalText = useMemo(() => {
     const goals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
     // Prefer the most coarse goal if multiple keys exist (e.g., after switching period in the edit dialog)
@@ -148,16 +150,21 @@ export default function HabitLogRow({
         >
           {habit.type === "checkbox" ? (
             <div
-              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 ${
-                isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"
-              }`}
+              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-2 transition-opacity ${
+                hasEntry ? "opacity-70 hover:opacity-90" : ""
+              } ${isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"}`}
             >
               <Switch checked={Boolean(value)} onCheckedChange={handleCheckboxChange} />
               <span className="text-sm">Done</span>
             </div>
           ) : (
             <div className="flex items-center gap-2">
-              <Button type="button" variant="ghost" className="h-9 w-9 px-0 rounded-xl" onClick={() => bump(-1)}>
+              <Button
+                type="button"
+                variant="ghost"
+                className={`h-9 w-9 px-0 rounded-xl transition-opacity ${hasEntry ? "opacity-60 hover:opacity-80" : ""}`}
+                onClick={() => bump(-1)}
+              >
                 −
               </Button>
 
@@ -168,10 +175,17 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className="w-[110px] text-center rounded-xl [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className={`w-[110px] text-center rounded-xl border-0 shadow-sm transition-colors ${
+                  hasEntry ? "bg-muted/20 text-foreground" : "bg-background/60 text-foreground"
+                } [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               />
 
-              <Button type="button" variant="ghost" className="h-9 w-9 px-0 rounded-xl" onClick={() => bump(1)}>
+              <Button
+                type="button"
+                variant="ghost"
+                className={`h-9 w-9 px-0 rounded-xl transition-opacity ${hasEntry ? "opacity-60 hover:opacity-80" : ""}`}
+                onClick={() => bump(1)}
+              >
                 +
               </Button>
             </div>
