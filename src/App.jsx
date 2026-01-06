@@ -647,8 +647,12 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
                       p.color ||
                       p.stroke ||
                       (k === "goalCum" ? "#ef4444" : k === "actualCum" ? "#3b82f6" : "currentColor");
-
-                    return <span className="h-2 w-2 rounded-full" style={{ background: dotColor }} />;
+                    return (
+                      <span
+                        className="inline-block flex-none h-2 w-2 rounded-full"
+                        style={{ backgroundColor: dotColor }}
+                      />
+                    );
                   })()}
                   <span>{labelText}</span>
                 </div>
