@@ -11,7 +11,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [type, setType] = useState("number");
-  const [unit, setUnit] = useState("reps");
+  const [unit, setUnit] = useState("");
   const [goalValue, setGoalValue] = useState("");
   const [goalPeriod, setGoalPeriod] = useState("daily");
   const [goalEnabled, setGoalEnabled] = useState(false);
@@ -19,7 +19,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
   function reset() {
     setName("");
     setType("number");
-    setUnit("reps");
+    setUnit("");
     setGoalValue("");
     setGoalPeriod("daily");
     setGoalEnabled(false);
@@ -60,17 +60,17 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
           <DialogTitle>Add a habit</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4">
+        <div className="grid gap-2">
           <div className="grid md:grid-cols-2 gap-3">
-            <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <div className="grid gap-1.5">
+              <Label className="text-xs text-muted-foreground">Name</Label>
+              <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
 
             <div className="grid gap-2">
-              <Label className="text-sm text-muted-foreground">Type</Label>
+              <Label className="text-xs text-muted-foreground">Type</Label>
               <Select value={type} onValueChange={(v) => setType(v)}>
-                <SelectTrigger>
+                <SelectTrigger className="h-11 text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -84,15 +84,15 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
           {type === "number" ? (
             <div className="grid md:grid-cols-2 gap-3">
               <div className="grid gap-2">
-                <Label className="text-sm text-muted-foreground">Unit</Label>
-                <Input value={unit} onChange={(e) => setUnit(e.target.value)} />
+                <Label className="text-xs text-muted-foreground">Unit</Label>
+                <Input className="h-11 text-base" value={unit} onChange={(e) => setUnit(e.target.value)} />
               </div>
 
-              <div className="grid gap-2">
+              <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
                 <div className="flex items-center justify-between gap-2">
-                  <Label className="text-sm text-muted-foreground">Goal</Label>
+                  <Label className="text-xs text-muted-foreground">Goal</Label>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Set a goal</span>
+                    <span className="text-xs text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
                     <Switch
                       checked={goalEnabled}
                       onCheckedChange={(v) => {
@@ -106,7 +106,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                 {goalEnabled ? (
                   <div className="flex gap-2">
                     <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                      <SelectTrigger className="flex-1">
+                      <SelectTrigger className="flex-1 h-11 text-base">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -117,7 +117,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                       </SelectContent>
                     </Select>
                     <Input
-                      className="w-[140px]"
+                      className="w-[140px] h-11 text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       type="number"
                       value={goalValue}
                       onChange={(e) => setGoalValue(e.target.value)}
@@ -127,11 +127,11 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
               </div>
             </div>
           ) : (
-            <div className="grid gap-2">
+            <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
               <div className="flex items-center justify-between gap-2">
-                <Label className="text-sm text-muted-foreground">Goal</Label>
+                <Label className="text-xs text-muted-foreground">Goal</Label>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Set a goal</span>
+                  <span className="text-xs text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
                   <Switch
                     checked={goalEnabled}
                     onCheckedChange={(v) => {
@@ -145,7 +145,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
               {goalEnabled ? (
                 <div className="flex gap-2">
                   <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                    <SelectTrigger className="flex-1">
+                    <SelectTrigger className="flex-1 h-11 text-base">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -156,7 +156,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                     </SelectContent>
                   </Select>
                   <Input
-                    className="w-[140px]"
+                    className="w-[140px] h-11 text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     type="number"
                     value={goalValue}
                     onChange={(e) => setGoalValue(e.target.value)}
@@ -168,7 +168,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
-              variant="secondary"
+              variant="ghost"
               onClick={() => {
                 setOpen(false);
                 reset();
