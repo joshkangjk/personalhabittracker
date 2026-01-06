@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+// Select removed: goals are yearly-only
 import { Switch } from "@/components/ui/switch";
 import { Pencil } from "lucide-react";
 
@@ -14,22 +14,25 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
   const [unit, setUnit] = useState(() => habit.unit || "");
 
   const initialGoals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
-  const goalOrder = ["daily", "weekly", "monthly", "yearly"];
-  const initialPeriod =
-    (habit.goalPeriod && goalOrder.includes(habit.goalPeriod) ? habit.goalPeriod : null) ||
-    goalOrder.find((p) => Number(initialGoals?.[p] ?? 0) > 0) ||
-    "daily";
-  const initialValue = Number(initialGoals?.[initialPeriod] ?? 0);
+  const n = (v) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) && x > 0 ? x : 0;
+  };
 
-  const [goalValue, setGoalValue] = useState(() => (initialValue > 0 ? String(initialValue) : ""));
-  const [goalPeriod, setGoalPeriod] = useState(() => initialPeriod);
-  const [goalEnabled, setGoalEnabled] = useState(() => Boolean(initialValue > 0));
+  // Prefer explicit yearly goal; otherwise derive a yearly goal from legacy multi-period values.
+  const initialYearly =
+    n(initialGoals.yearly) ||
+    (n(initialGoals.daily) ? n(initialGoals.daily) * 365 : 0) ||
+    (n(initialGoals.weekly) ? n(initialGoals.weekly) * 52 : 0) ||
+    (n(initialGoals.monthly) ? n(initialGoals.monthly) * 12 : 0);
+
+  const [goalValue, setGoalValue] = useState(() => (initialYearly > 0 ? String(initialYearly) : ""));
+  const [goalEnabled, setGoalEnabled] = useState(() => Boolean(initialYearly > 0));
 
   function save() {
-    const baseGoals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
     const nextGoals =
       goalEnabled && goalValue !== "" && Number(goalValue) > 0
-        ? { ...baseGoals, [goalPeriod]: clampNumber(goalValue) }
+        ? { yearly: clampNumber(goalValue) }
         : {};
 
     const patch = {
@@ -89,18 +92,8 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
             </div>
 
             {goalEnabled ? (
-              <div className="grid grid-cols-2 gap-2">
-                <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Daily</SelectItem>
-                    <SelectItem value="weekly">Weekly</SelectItem>
-                    <SelectItem value="monthly">Monthly</SelectItem>
-                    <SelectItem value="yearly">Yearly</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid gap-2">
+                <Label className="text-xs text-muted-foreground">Yearly goal</Label>
                 <Input type="number" value={goalValue} onChange={(e) => setGoalValue(e.target.value)} />
               </div>
             ) : null}

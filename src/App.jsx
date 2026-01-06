@@ -75,24 +75,46 @@ function formatNumberWithDecimals(n, decimals) {
 
 function normalizeGoals(goals) {
   const g = goals && typeof goals === "object" ? goals : {};
-  const pick = (k) => {
-    const v = Number(g[k] ?? 0);
-    return Number.isFinite(v) && v > 0 ? v : 0;
+  const n = (v) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) && x > 0 ? x : 0;
   };
+
   return {
-    daily: pick("daily"),
-    weekly: pick("weekly"),
-    monthly: pick("monthly"),
-    yearly: pick("yearly"),
+    daily: n(g.daily),
+    weekly: n(g.weekly),
+    monthly: n(g.monthly),
+    yearly: n(g.yearly),
   };
 }
 
-function getGoalForPeriod(habit, period) {
-  const goals = normalizeGoals(habit?.goals);
-  const p = ["daily", "weekly", "monthly", "yearly"].includes(period) ? period : "daily";
-  return goals[p] || 0;
+function normalizeYearlyGoalFromGoals(goals) {
+  const g = goals && typeof goals === "object" ? goals : {};
+  const n = (v) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) && x > 0 ? x : 0;
+  };
+
+  // Prefer explicitly set yearly goal
+  const yearly = n(g.yearly);
+  if (yearly > 0) return yearly;
+
+  // Back-compat: derive a yearly goal if only other periods exist
+  const daily = n(g.daily);
+  if (daily > 0) return daily * 365;
+
+  const weekly = n(g.weekly);
+  if (weekly > 0) return weekly * 52;
+
+  const monthly = n(g.monthly);
+  if (monthly > 0) return monthly * 12;
+
+  return 0;
 }
 
+function getYearlyGoal(habit) {
+  return normalizeYearlyGoalFromGoals(habit?.goals);
+}
 
 // =====================
 // Local storage state
@@ -221,7 +243,6 @@ function defaultState() {
     entries: {},
     ui: {
       selectedYear: year,
-      trendHorizon: "yearly",
     },
   };
 }
@@ -232,8 +253,6 @@ function ensureStateShape(s) {
   if (!s.entries || typeof s.entries !== "object") s.entries = {};
   if (!s.ui || typeof s.ui !== "object") s.ui = { selectedYear: new Date().getFullYear() };
   if (!s.ui.selectedYear) s.ui.selectedYear = new Date().getFullYear();
-  if (!s.ui.trendHorizon) s.ui.trendHorizon = "yearly";
-  if (!["daily", "weekly", "monthly", "yearly"].includes(s.ui.trendHorizon)) s.ui.trendHorizon = "yearly";
   const cy = new Date().getFullYear();
   // Allow browsing past years; only guard against obviously invalid values.
   if (!Number.isFinite(Number(s.ui.selectedYear))) s.ui.selectedYear = cy;
@@ -354,7 +373,7 @@ function habitStats(habit, entries, year) {
   };
 }
 
-function buildHabitSeries(habit, entries, year, horizon = "yearly") {
+function buildHabitSeries(habit, entries, year) {
   // Start at Jan 1 of the selected year (not first log date)
   const start = new Date(year, 0, 1);
 
@@ -365,25 +384,19 @@ function buildHabitSeries(habit, entries, year, horizon = "yearly") {
       ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
       : new Date(year, 11, 31);
 
-    // Goal setup (multi-horizon)
-    const period = ["daily", "weekly", "monthly", "yearly"].includes(horizon) ? horizon : "yearly";
-    const goal = clampNumber(getGoalForPeriod(habit, period));
+      // Goal setup (single yearly goal)
+      const goalYearly = clampNumber(getYearlyGoal(habit));
 
-    const daysInYear = (y) => {
-      const start = new Date(y, 0, 1);
-      const end = new Date(y + 1, 0, 1);
-      return Math.round((end - start) / (1000 * 60 * 60 * 24));
-    };
+      const daysInYear = (y) => {
+        const s = new Date(y, 0, 1);
+        const e = new Date(y + 1, 0, 1);
+        return Math.round((e - s) / (1000 * 60 * 60 * 24));
+      };
 
-    const daysInMonth = (y, m0) => new Date(y, m0 + 1, 0).getDate();
-
-    const goalPerDayForDate = (dateObj) => {
-      if (!(goal > 0)) return 0;
-      if (period === "daily") return goal;
-      if (period === "weekly") return goal / 7;
-      if (period === "monthly") return goal / daysInMonth(dateObj.getFullYear(), dateObj.getMonth());
-      return goal / daysInYear(dateObj.getFullYear());
-    };
+      const goalPerDayForDate = (dateObj) => {
+        if (!(goalYearly > 0)) return 0;
+        return goalYearly / daysInYear(dateObj.getFullYear());
+      };
 
   let actualCum = 0;
   let goalCum = 0;
@@ -397,13 +410,13 @@ function buildHabitSeries(habit, entries, year, horizon = "yearly") {
     const daily = entryToNumber(habit, e, 0);
 
     actualCum += daily;
-    if (goal > 0) goalCum += goalPerDayForDate(d);
+    if (goalYearly > 0) goalCum += goalPerDayForDate(d);
 
     out.push({
       date: iso,
       daily,
       actualCum,
-      goalCum: goal > 0 ? goalCum : null,
+      goalCum: goalYearly > 0 ? goalCum : null,
     });
   }
 
@@ -417,10 +430,13 @@ function habitFromRow(r) {
   const legacyGoal = Number(r.goal_daily ?? 0);
   const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(r.goal_period) ? r.goal_period : "daily";
 
-  const cloudGoals = normalizeGoals(r.goals);
-  const hasAny = cloudGoals.daily || cloudGoals.weekly || cloudGoals.monthly || cloudGoals.yearly;
+  // Prefer `goals` jsonb; fall back to legacy columns if none set.
+  let goals = normalizeGoals(r.goals);
+  const hasAny = goals.daily || goals.weekly || goals.monthly || goals.yearly;
 
-  const mergedGoals = hasAny ? cloudGoals : legacyGoal > 0 ? { ...cloudGoals, [legacyPeriod]: legacyGoal } : cloudGoals;
+  if (!hasAny && legacyGoal > 0) {
+    goals = { ...goals, [legacyPeriod]: clampNumber(legacyGoal) };
+  }
 
   return {
     id: r.id,
@@ -428,7 +444,7 @@ function habitFromRow(r) {
     type: r.type,
     unit: r.unit ?? undefined,
     decimals: r.decimals ?? 0,
-    goals: mergedGoals,
+    goals,
     sortIndex: r.sort_index ?? 0,
   };
 }
@@ -442,8 +458,7 @@ function habitToInsertRow(h, userId, sortIndex) {
     unit: h.type === "number" ? (h.unit ?? null) : null,
     decimals: h.type === "number" ? Number(h.decimals ?? 0) : 0,
     goals: normalizeGoals(h.goals),
-    // legacy columns kept for backward compatibility
-    goal_daily: Number(getGoalForPeriod(h, "daily") ?? 0),
+    goal_daily: 0,
     goal_period: "daily",
     sort_index: Number.isFinite(Number(sortIndex)) ? Number(sortIndex) : 0,
   };
@@ -628,7 +643,7 @@ function HabitStatsGrid({ habit, stats }) {
   );
 }
 
-function TrendChart({ series, habit, year, gradientPrefix, horizon = "yearly" }) {
+function TrendChart({ series, habit, year, gradientPrefix }) {
   if (!habit) return null;
 
   return (
@@ -680,7 +695,7 @@ function TrendChart({ series, habit, year, gradientPrefix, horizon = "yearly" })
               isAnimationActive
             />
             <Line type="monotone" dataKey="actualCum" dot={false} activeDot={{ r: 4 }} strokeWidth={2} isAnimationActive />
-            {getGoalForPeriod(habit, horizon) > 0 ? (
+            {getYearlyGoal(habit) > 0 ? (
               <Line
                 type="monotone"
                 dataKey="goalCum"
@@ -793,7 +808,7 @@ function PublicView({ token }) {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeries(focusedHabit, entries, year, "yearly");
+    return buildHabitSeries(focusedHabit, entries, year);
   }, [focusedHabit, entries, year]);
 
   const focusedStats = useMemo(() => {
@@ -900,7 +915,6 @@ function PublicView({ token }) {
                       habit={focusedHabit}
                       year={year}
                       gradientPrefix="public"
-                      horizon="yearly"
                     />
                   </>
                 ) : (
@@ -1089,12 +1103,6 @@ export default function HabitTrackerMVP() {
 
   const selectedYear = state.ui.selectedYear;
 
-  const trendHorizon = state.ui.trendHorizon;
-
-  const handleTrendHorizonChange = useCallback((v) => {
-    setState((s) => ({ ...s, ui: { ...s.ui, trendHorizon: v } }));
-  }, []);
-
   const updateHabit = useCallback(
     async (habitId, patch) => {
       const userId = session?.user?.id;
@@ -1116,8 +1124,7 @@ export default function HabitTrackerMVP() {
         unit: merged.type === "number" ? (merged.unit ?? null) : null,
         decimals: merged.type === "number" ? Number(merged.decimals ?? 0) : 0,
         goals: normalizeGoals(merged.goals),
-        // legacy columns kept for backward compatibility
-        goal_daily: Number(getGoalForPeriod(merged, "daily") ?? 0),
+        goal_daily: 0,
         goal_period: "daily",
       };
 
@@ -1557,8 +1564,8 @@ export default function HabitTrackerMVP() {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeries(focusedHabit, state.entries, selectedYear, trendHorizon);
-  }, [focusedHabit, state.entries, selectedYear, trendHorizon]);
+    return buildHabitSeries(focusedHabit, state.entries, selectedYear);
+  }, [focusedHabit, state.entries, selectedYear]);
 
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
@@ -1744,20 +1751,6 @@ export default function HabitTrackerMVP() {
                   <p className="text-sm text-muted-foreground">
                     {focusedHabit ? `Showing: ${focusedHabit.name}` : "Pick a habit"}
                   </p>
-                  <div className="mt-2 flex items-center gap-2">
-                    <Label className="text-xs text-muted-foreground">Goal</Label>
-                    <Select value={trendHorizon} onValueChange={handleTrendHorizonChange}>
-                      <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {focusedHabit ? (
@@ -1769,12 +1762,11 @@ export default function HabitTrackerMVP() {
                         habit={focusedHabit}
                         year={selectedYear}
                         gradientPrefix="private"
-                        horizon={trendHorizon}
                       />
                       <div className="h-2" />
                     </>
                   ) : (
-                    <div className="text-sm text-muted-foreground">Add a habit first.</div>
+                    <div className="text-sm text-muted-forxeground">Add a habit first.</div>
                   )}
                 </CardContent>
               </Card>
