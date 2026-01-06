@@ -1631,13 +1631,13 @@ export default function HabitTrackerMVP() {
                 <CardContent className="space-y-3">
                   {yearSummary.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
-                    ) : (
-                      <YearSummaryList
-                        items={yearSummary}
-                        selectedHabitId={effectiveFocusedHabitId}
-                        onSelectHabit={(id) => setFocusedHabitId(id)}
-                      />
-                    )}
+                  ) : (
+                    <YearSummaryList
+                      items={yearSummary}
+                      selectedHabitId={effectiveFocusedHabitId}
+                      onSelectHabit={(id) => setFocusedHabitId(id)}
+                    />
+                  )}
                 </CardContent>
               </Card>
 
