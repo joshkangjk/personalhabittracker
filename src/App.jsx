@@ -642,12 +642,13 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
               <div key={String(name)} className="flex items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-2 text-muted-foreground">
                   {(() => {
-                    const rawKey = String(p.dataKey || p.name || "");
-                    const k = rawKey.toLowerCase();
+                    const labelKey = String(labelText || "").toLowerCase();
+                    const rawKey = String(p.dataKey || p.name || "").toLowerCase();
+
                     const dotColor =
                       p.color ||
                       p.stroke ||
-                      (k.includes("goalcum") || k === "goal" ? "#ef4444" : k.includes("actualcum") || k === "actual" ? "#3b82f6" : "currentColor");
+                      (labelKey === "goal" || rawKey.includes("goal") ? "#ef4444" : labelKey === "actual" || rawKey.includes("actual") ? "#3b82f6" : "currentColor");
 
                     return (
                       <span
