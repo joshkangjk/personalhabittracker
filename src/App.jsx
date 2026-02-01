@@ -370,11 +370,30 @@ function habitStats(habit, entries, year) {
   const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
   const avgLast7 = last7.length ? last7.reduce((a, b) => a + b, 0) / last7.length : 0;
 
+  // Compute avgPerDay for the year (accounting for leap years and elapsed days if current year)
+  const now = new Date();
+  const isCurrent = Number(year) === now.getFullYear();
+  const daysInYear = (() => {
+    const s = new Date(year, 0, 1);
+    const e = new Date(Number(year) + 1, 0, 1);
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  })();
+  // Compute daysElapsed: if current year, use days so far; else, use full year
+  const yearStart = new Date(Number(year), 0, 1);
+  const daysElapsed = isCurrent
+    ? Math.min(
+        daysInYear,
+        Math.floor((now - yearStart) / (1000 * 60 * 60 * 24)) + 1
+      )
+    : daysInYear;
+  const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
+
   return {
     total,
     daysLogged,
     best,
     avgPerLoggedDay,
+    avgPerDay,
     avgLast7,
   };
 }
@@ -401,11 +420,22 @@ function habitStatsMonth(habit, entries, year, month) {
 
   const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
 
+  // Compute avgPerDay for the month (accounting for month length and elapsed days if current)
+  const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
+  const start = new Date(year, mIndex, 1);
+  const endOfMonth = new Date(year, mIndex + 1, 0);
+
+  const now = new Date();
+  const isCurrent = Number(year) === now.getFullYear() && mIndex === now.getMonth();
+  const daysInPeriod = isCurrent ? Math.min(endOfMonth.getDate(), now.getDate()) : endOfMonth.getDate();
+  const avgPerDay = daysInPeriod > 0 ? total / daysInPeriod : 0;
+
   return {
     total,
     daysLogged,
     best,
     avgPerLoggedDay,
+    avgPerDay,
     avgLast7: 0,
   };
 }
@@ -775,7 +805,7 @@ function HabitStatsGrid({ habit, stats }) {
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
       <MiniStat label="Total" value={stats ? formatStatTotal(habit, stats.total) : ""} />
       <MiniStat label="Avg logged" value={stats ? formatStatAvg(habit, stats.avgPerLoggedDay) : ""} />
-      <MiniStat label="Avg 7d" value={stats ? formatStatAvg(habit, stats.avgLast7) : ""} />
+      <MiniStat label="Avg/day" value={stats ? formatStatAvg(habit, stats.avgPerDay) : ""} />
       <MiniStat label="Best day" value={stats ? formatStatBest(habit, stats.best) : ""} />
     </div>
   );
