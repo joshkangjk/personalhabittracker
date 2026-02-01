@@ -181,8 +181,13 @@ function withinYear(iso, year) {
   return iso >= `${year}-01-01` && iso <= `${year}-12-31`;
 }
 
+
 function monthFromISO(iso) {
   return iso?.slice(5, 7) || "";
+}
+
+function withinMonth(iso, year, month) {
+  return withinYear(iso, year) && monthFromISO(iso) === month;
 }
 
 function isoRangeForYear(year) {
@@ -328,6 +333,7 @@ function listDatesInYear(entries, year) {
 // =====================
 // Stats + chart series
 // =====================
+
 function habitStats(habit, entries, year) {
   const dates = Object.keys(entries)
     .filter((d) => withinYear(d, year))
@@ -373,6 +379,37 @@ function habitStats(habit, entries, year) {
   };
 }
 
+function habitStatsMonth(habit, entries, year, month) {
+  const dates = Object.keys(entries)
+    .filter((d) => withinMonth(d, year, month))
+    .sort();
+
+  let total = 0;
+  let daysLogged = 0;
+  let best = null;
+
+  for (const d of dates) {
+    const e = getEntry(entries, d, habit.id);
+    if (!e) continue;
+    daysLogged += 1;
+    const v = entryToNumber(habit, e, 0);
+    total += v;
+    if (habit.type === "number") {
+      best = best === null ? v : Math.max(best, v);
+    }
+  }
+
+  const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
+
+  return {
+    total,
+    daysLogged,
+    best,
+    avgPerLoggedDay,
+    avgLast7: 0,
+  };
+}
+
 function buildHabitSeries(habit, entries, year) {
   // Start at Jan 1 of the selected year (not first log date)
   const start = new Date(year, 0, 1);
@@ -407,6 +444,56 @@ function buildHabitSeries(habit, entries, year) {
 
     const e = getEntry(entries, iso, habit.id);
 
+    const daily = entryToNumber(habit, e, 0);
+
+    actualCum += daily;
+    if (goalYearly > 0) goalCum += goalPerDayForDate(d);
+
+    out.push({
+      date: iso,
+      daily,
+      actualCum,
+      goalCum: goalYearly > 0 ? goalCum : null,
+    });
+  }
+
+  return out;
+}
+
+function buildHabitSeriesMonth(habit, entries, year, month) {
+  // Month is a 2-digit string: "01".."12"
+  const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
+
+  // Start at first day of the month
+  const start = new Date(year, mIndex, 1);
+
+  // End at today if current year+month, otherwise last day of month
+  const now = new Date();
+  const isCurrent = year === now.getFullYear() && mIndex === now.getMonth();
+  const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : new Date(year, mIndex + 1, 0);
+
+  // Goal setup (single yearly goal, distributed across the year)
+  const goalYearly = clampNumber(getYearlyGoal(habit));
+
+  const daysInYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y + 1, 0, 1);
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  };
+
+  const goalPerDayForDate = (dateObj) => {
+    if (!(goalYearly > 0)) return 0;
+    return goalYearly / daysInYear(dateObj.getFullYear());
+  };
+
+  let actualCum = 0;
+  let goalCum = 0;
+
+  const out = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+
+    const e = getEntry(entries, iso, habit.id);
     const daily = entryToNumber(habit, e, 0);
 
     actualCum += daily;
@@ -694,14 +781,14 @@ function HabitStatsGrid({ habit, stats }) {
   );
 }
 
-function TrendChart({ series, habit, year, gradientPrefix }) {
+function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) {
   if (!habit) return null;
 
   return (
     <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 backdrop-blur shadow-sm p-2">
       {!(series || []).length ? (
         <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
-          No data yet for this habit in {year}.
+          {emptyLabel || `No data yet for this habit in ${year}.`}
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
@@ -1061,6 +1148,7 @@ export default function HabitTrackerMVP() {
   const [state, setState] = useState(() => ensureStateShape(loadState()) || defaultState());
   const [activeDate, setActiveDate] = useState(todayISO());
   const [historyMonth, setHistoryMonth] = useState("all");
+  const [dashboardMonth, setDashboardMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, "0"));
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
   const [focusedHabitId, setFocusedHabitId] = useState(() => state.habits[0]?.id || "");
@@ -1630,6 +1718,16 @@ export default function HabitTrackerMVP() {
     return out;
   }, [state.habits, state.entries, selectedYear]);
 
+  const monthSummary = useMemo(() => {
+    const activeHabits = state.habits;
+    const out = activeHabits.map((h) => {
+      const st = habitStatsMonth(h, state.entries, selectedYear, dashboardMonth);
+      return { habit: h, stats: st };
+    });
+    out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
+    return out;
+  }, [state.habits, state.entries, selectedYear, dashboardMonth]);
+
   // Removed effect to set focusedHabitId to avoid setState in effect.
 
   const effectiveFocusedHabitId = focusedHabitId || state.habits[0]?.id || "";
@@ -1641,8 +1739,8 @@ export default function HabitTrackerMVP() {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeries(focusedHabit, state.entries, selectedYear);
-  }, [focusedHabit, state.entries, selectedYear]);
+    return buildHabitSeriesMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
+  }, [focusedHabit, state.entries, selectedYear, dashboardMonth]);
 
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
@@ -1806,18 +1904,66 @@ export default function HabitTrackerMVP() {
             <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
               <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
                 <CardHeader>
-                  <CardTitle className="text-base font-semibold tracking-tight">Year Summary</CardTitle>
-                  <p className="text-sm text-muted-foreground">Totals for {selectedYear}.</p>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-base font-semibold tracking-tight">Year Summary</CardTitle>
+                      <p className="text-sm text-muted-foreground">Totals for {selectedYear}.</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs text-muted-foreground">Month</Label>
+                      <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
+                        <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
+                          <SelectValue placeholder="Month" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="01">Jan</SelectItem>
+                          <SelectItem value="02">Feb</SelectItem>
+                          <SelectItem value="03">Mar</SelectItem>
+                          <SelectItem value="04">Apr</SelectItem>
+                          <SelectItem value="05">May</SelectItem>
+                          <SelectItem value="06">Jun</SelectItem>
+                          <SelectItem value="07">Jul</SelectItem>
+                          <SelectItem value="08">Aug</SelectItem>
+                          <SelectItem value="09">Sep</SelectItem>
+                          <SelectItem value="10">Oct</SelectItem>
+                          <SelectItem value="11">Nov</SelectItem>
+                          <SelectItem value="12">Dec</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   {yearSummary.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
                   ) : (
-                    <YearSummaryList
-                      items={yearSummary}
-                      selectedHabitId={effectiveFocusedHabitId}
-                      onSelectHabit={(id) => setFocusedHabitId(id)}
-                    />
+                    <>
+                      <YearSummaryList
+                        items={yearSummary}
+                        selectedHabitId={effectiveFocusedHabitId}
+                        onSelectHabit={(id) => setFocusedHabitId(id)}
+                      />
+                      <div className="h-1" />
+                      <div className="pt-2 border-t border-muted/30">
+                        <div className="text-sm font-semibold tracking-tight">Month Summary</div>
+                        <div className="text-xs text-muted-foreground mt-0.5">
+                          Totals for {dashboardMonth}-{selectedYear}.
+                        </div>
+
+                        <div className="mt-3">
+                          {monthSummary.length === 0 ? (
+                            <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
+                          ) : (
+                            <YearSummaryList
+                              items={monthSummary}
+                              selectedHabitId={effectiveFocusedHabitId}
+                              onSelectHabit={(id) => setFocusedHabitId(id)}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </>
                   )}
                 </CardContent>
               </Card>
@@ -1826,7 +1972,7 @@ export default function HabitTrackerMVP() {
                 <CardHeader>
                   <CardTitle className="text-base font-semibold tracking-tight">Trend</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {focusedHabit ? `Showing: ${focusedHabit.name}` : "Pick a habit"}
+                    {focusedHabit ? `Showing: ${focusedHabit.name} (${dashboardMonth}-${selectedYear})` : "Pick a habit"}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1839,6 +1985,7 @@ export default function HabitTrackerMVP() {
                         habit={focusedHabit}
                         year={selectedYear}
                         gradientPrefix="private"
+                        emptyLabel={`No data yet for this habit in ${dashboardMonth}-${selectedYear}.`}
                       />
                       <div className="h-2" />
                     </>
