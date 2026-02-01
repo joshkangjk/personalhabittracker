@@ -1149,6 +1149,7 @@ export default function HabitTrackerMVP() {
   const [activeDate, setActiveDate] = useState(todayISO());
   const [historyMonth, setHistoryMonth] = useState("all");
   const [dashboardMonth, setDashboardMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, "0"));
+  const [dashboardSummaryMode, setDashboardSummaryMode] = useState("year");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isMobile = useIsMobile();
   const [focusedHabitId, setFocusedHabitId] = useState(() => state.habits[0]?.id || "");
@@ -1728,6 +1729,9 @@ export default function HabitTrackerMVP() {
     return out;
   }, [state.habits, state.entries, selectedYear, dashboardMonth]);
 
+  const dashboardSummaryItems = dashboardSummaryMode === "month" ? monthSummary : yearSummary;
+  const dashboardSummaryLabel = dashboardSummaryMode === "month" ? `${dashboardMonth}-${selectedYear}` : `${selectedYear}`;
+
   // Removed effect to set focusedHabitId to avoid setState in effect.
 
   const effectiveFocusedHabitId = focusedHabitId || state.habits[0]?.id || "";
@@ -1739,13 +1743,19 @@ export default function HabitTrackerMVP() {
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
-    return buildHabitSeriesMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
-  }, [focusedHabit, state.entries, selectedYear, dashboardMonth]);
+    if (dashboardSummaryMode === "month") {
+      return buildHabitSeriesMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
+    }
+    return buildHabitSeries(focusedHabit, state.entries, selectedYear);
+  }, [focusedHabit, state.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
 
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
+    if (dashboardSummaryMode === "month") {
+      return habitStatsMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
+    }
     return habitStats(focusedHabit, state.entries, selectedYear);
-  }, [focusedHabit, state.entries, selectedYear]);
+  }, [focusedHabit, state.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
 
   const publicToken = getPublicTokenFromPath();
   if (publicToken) return <PublicView token={publicToken} />;
@@ -1904,66 +1914,60 @@ export default function HabitTrackerMVP() {
             <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
               <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
                 <CardHeader>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="text-base font-semibold tracking-tight">Year Summary</CardTitle>
-                      <p className="text-sm text-muted-foreground">Totals for {selectedYear}.</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs text-muted-foreground">Month</Label>
-                      <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
-                        <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
-                          <SelectValue placeholder="Month" />
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <Select value={dashboardSummaryMode} onValueChange={setDashboardSummaryMode}>
+                        <SelectTrigger className="w-auto h-auto px-0 py-0 border-0 shadow-none bg-transparent focus:ring-0 focus:ring-offset-0 rounded-none">
+                          <div className="text-base font-semibold tracking-tight">
+                            <SelectValue placeholder="Year Summary" />
+                          </div>
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="01">Jan</SelectItem>
-                          <SelectItem value="02">Feb</SelectItem>
-                          <SelectItem value="03">Mar</SelectItem>
-                          <SelectItem value="04">Apr</SelectItem>
-                          <SelectItem value="05">May</SelectItem>
-                          <SelectItem value="06">Jun</SelectItem>
-                          <SelectItem value="07">Jul</SelectItem>
-                          <SelectItem value="08">Aug</SelectItem>
-                          <SelectItem value="09">Sep</SelectItem>
-                          <SelectItem value="10">Oct</SelectItem>
-                          <SelectItem value="11">Nov</SelectItem>
-                          <SelectItem value="12">Dec</SelectItem>
+                          <SelectItem value="year">Year Summary</SelectItem>
+                          <SelectItem value="month">Month Summary</SelectItem>
                         </SelectContent>
                       </Select>
+
+                      {/* intentionally empty right side */}
+                      <div />
                     </div>
+
+                    <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
+
+                    {dashboardSummaryMode === "month" ? (
+                      <div className="flex items-center gap-2">
+                        <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
+                          <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
+                            <SelectValue placeholder="Month" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="01">Jan</SelectItem>
+                            <SelectItem value="02">Feb</SelectItem>
+                            <SelectItem value="03">Mar</SelectItem>
+                            <SelectItem value="04">Apr</SelectItem>
+                            <SelectItem value="05">May</SelectItem>
+                            <SelectItem value="06">Jun</SelectItem>
+                            <SelectItem value="07">Jul</SelectItem>
+                            <SelectItem value="08">Aug</SelectItem>
+                            <SelectItem value="09">Sep</SelectItem>
+                            <SelectItem value="10">Oct</SelectItem>
+                            <SelectItem value="11">Nov</SelectItem>
+                            <SelectItem value="12">Dec</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : null}
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  {yearSummary.length === 0 ? (
+                  {dashboardSummaryItems.length === 0 ? (
                     <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
                   ) : (
-                    <>
-                      <YearSummaryList
-                        items={yearSummary}
-                        selectedHabitId={effectiveFocusedHabitId}
-                        onSelectHabit={(id) => setFocusedHabitId(id)}
-                      />
-                      <div className="h-1" />
-                      <div className="pt-2 border-t border-muted/30">
-                        <div className="text-sm font-semibold tracking-tight">Month Summary</div>
-                        <div className="text-xs text-muted-foreground mt-0.5">
-                          Totals for {dashboardMonth}-{selectedYear}.
-                        </div>
-
-                        <div className="mt-3">
-                          {monthSummary.length === 0 ? (
-                            <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
-                          ) : (
-                            <YearSummaryList
-                              items={monthSummary}
-                              selectedHabitId={effectiveFocusedHabitId}
-                              onSelectHabit={(id) => setFocusedHabitId(id)}
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </>
+                    <YearSummaryList
+                      items={dashboardSummaryItems}
+                      selectedHabitId={effectiveFocusedHabitId}
+                      onSelectHabit={(id) => setFocusedHabitId(id)}
+                    />
                   )}
                 </CardContent>
               </Card>
@@ -1972,7 +1976,7 @@ export default function HabitTrackerMVP() {
                 <CardHeader>
                   <CardTitle className="text-base font-semibold tracking-tight">Trend</CardTitle>
                   <p className="text-sm text-muted-foreground">
-                    {focusedHabit ? `Showing: ${focusedHabit.name} (${dashboardMonth}-${selectedYear})` : "Pick a habit"}
+                    {focusedHabit ? `Showing: ${focusedHabit.name} (${dashboardSummaryLabel})` : "Pick a habit"}
                   </p>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -1985,7 +1989,7 @@ export default function HabitTrackerMVP() {
                         habit={focusedHabit}
                         year={selectedYear}
                         gradientPrefix="private"
-                        emptyLabel={`No data yet for this habit in ${dashboardMonth}-${selectedYear}.`}
+                        emptyLabel={`No data yet for this habit in ${dashboardSummaryLabel}.`}
                       />
                       <div className="h-2" />
                     </>
