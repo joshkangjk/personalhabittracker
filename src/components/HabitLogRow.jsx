@@ -95,7 +95,7 @@ export default function HabitLogRow({
       setValue(next);
       commitWithDelay(next, onLog);
     },
-    [habit.type, value, clampNumber, commitWithDelay]
+    [habit.type, value, clampNumber, commitWithDelay, onLog]
   );
 
   const handleCheckboxChange = useCallback(
@@ -103,7 +103,7 @@ export default function HabitLogRow({
       setValue(v);
       commitWithDelay(Boolean(v), onLog);
     },
-    [commitWithDelay]
+    [commitWithDelay, onLog]
   );
 
   const handleNumberChange = useCallback((e) => setValue(e.target.value), []);

@@ -15,14 +15,10 @@ import AddHabitDialog from "./components/AddHabitDialog";
 import HabitLogRow from "./components/HabitLogRow";
 import HistoryDay from "./components/HistoryDay";
 
-// =====================
-// Constants
-// =====================
+// --- Constants ---
 const STORAGE_KEY = "pookie_habit_tracker_v1";
 
-// =====================
-// Date + number utils
-// =====================
+// --- Date & Number Utilities ---
 
 function isoFromDate(d) {
   const yyyy = d.getFullYear();
@@ -116,9 +112,7 @@ function getYearlyGoal(habit) {
   return normalizeYearlyGoalFromGoals(habit?.goals);
 }
 
-// =====================
-// Local storage state
-// =====================
+// --- Local Storage State ---
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -133,9 +127,7 @@ function saveState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
-// =====================
-// Generic helpers
-// =====================
+// --- Generic Helpers ---
 function uuid() {
   if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
   return `${Math.random().toString(16).slice(2)}${Date.now()}`;
@@ -186,8 +178,73 @@ function monthFromISO(iso) {
   return iso?.slice(5, 7) || "";
 }
 
-function withinMonth(iso, year, month) {
-  return withinYear(iso, year) && monthFromISO(iso) === month;
+
+function daysBetweenInclusive(startDate, endDate) {
+  return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+
+function periodBounds({ mode, year, month }) {
+  const y = Number(year);
+  const now = new Date();
+
+  if (mode === "month") {
+    const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
+    const start = new Date(y, mIndex, 1);
+    const endFull = new Date(y, mIndex + 1, 0);
+
+    const isCurrent = y === now.getFullYear() && mIndex === now.getMonth();
+    const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : endFull;
+
+    return { start, end, endFull, isCurrent };
+  }
+
+  const start = new Date(y, 0, 1);
+  const endFull = new Date(y, 11, 31);
+  const isCurrent = y === now.getFullYear();
+  const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : endFull;
+
+  return { start, end, endFull, isCurrent };
+}
+
+function goalForPeriod(habit, { mode, year, month }) {
+  const goals = normalizeGoals(habit?.goals);
+
+  // If a goal is explicitly set for the period, prefer it.
+  if (mode === "month" && goals.monthly > 0) return goals.monthly;
+  if (mode === "year" && goals.yearly > 0) return goals.yearly;
+
+  // Otherwise derive from yearly goal if present.
+  const yearly = clampNumber(getYearlyGoal(habit));
+  if (yearly > 0) {
+    if (mode === "month") return yearly / 12;
+    return yearly;
+  }
+
+  // Derive from daily goal if present.
+  if (goals.daily > 0) {
+    const bounds = periodBounds({ mode, year, month });
+    const totalDays = daysBetweenInclusive(bounds.start, bounds.endFull);
+    return goals.daily * totalDays;
+  }
+
+  // Derive from weekly goal if present.
+  if (goals.weekly > 0) {
+    const bounds = periodBounds({ mode, year, month });
+    const totalDays = daysBetweenInclusive(bounds.start, bounds.endFull);
+    const weeks = totalDays / 7;
+    return goals.weekly * weeks;
+  }
+
+  return 0;
+}
+
+function entryCountsAsDone(habit, entry) {
+  if (!entry) return false;
+  if (habit?.type === "checkbox") return Boolean(entry.value);
+  // For number habits, treat any positive value as done.
+  const v = clampNumber(entry.value);
+  return v > 0;
 }
 
 function isoRangeForYear(year) {
@@ -212,9 +269,7 @@ function getPublicTokenFromPath() {
   }
 }
 
-// =====================
-// Chart helpers
-// =====================
+// --- Chart Helpers ---
 function chartGradientId(prefix, habitId) {
   return `${prefix}_actual_${String(habitId || "none")}`;
 }
@@ -223,9 +278,7 @@ function isCurrentYear(year) {
   return Number(year) === new Date().getFullYear();
 }
 
-// =====================
-// State shape + defaults
-// =====================
+// --- State Shape & Defaults ---
 function defaultState() {
   const year = new Date().getFullYear();
   return {
@@ -284,9 +337,7 @@ function ensureStateShape(s) {
   return s;
 }
 
-// =====================
-// Entries helpers
-// =====================
+// --- Entry Helpers ---
 function getEntry(entries, dateISO, habitId) {
   return entries?.[dateISO]?.[habitId] ?? null;
 }
@@ -330,63 +381,79 @@ function listDatesInYear(entries, year) {
     .sort((a, b) => (a < b ? 1 : -1));
 }
 
-// =====================
-// Stats + chart series
-// =====================
+// --- Stats & Chart Series ---
 
 function habitStats(habit, entries, year) {
+  const mode = "year";
+  const bounds = periodBounds({ mode, year });
+  const startISO = isoFromDate(bounds.start);
+  const endISO = isoFromDate(bounds.end);
+
   const dates = Object.keys(entries)
-    .filter((d) => withinYear(d, year))
+    .filter((d) => d >= startISO && d <= endISO)
     .sort();
 
   let total = 0;
   let daysLogged = 0;
   let best = null;
-  let last7 = [];
+
+  // For streaks we need per-day done flags.
+  const doneSet = new Set();
 
   for (const d of dates) {
     const e = getEntry(entries, d, habit.id);
     if (!e) continue;
+
     daysLogged += 1;
+
     const v = entryToNumber(habit, e, 0);
     total += v;
+
     if (habit.type === "number") {
       best = best === null ? v : Math.max(best, v);
     }
+
+    if (entryCountsAsDone(habit, e)) {
+      doneSet.add(d);
+    }
   }
 
-  const base = new Date();
-  const points = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(base.getFullYear(), base.getMonth(), base.getDate() - i);
-    const iso = isoFromDate(d);
-    if (!withinYear(iso, year)) continue;
-    const e = getEntry(entries, iso, habit.id);
-    const v = entryToNumber(habit, e, 0);
-    points.push(v);
-  }
-  last7 = points;
+  const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
+  const daysTotal = daysBetweenInclusive(bounds.start, bounds.endFull);
 
   const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
-  const avgLast7 = last7.length ? last7.reduce((a, b) => a + b, 0) / last7.length : 0;
-
-  // Compute avgPerDay for the year (accounting for leap years and elapsed days if current year)
-  const now = new Date();
-  const isCurrent = Number(year) === now.getFullYear();
-  const daysInYear = (() => {
-    const s = new Date(year, 0, 1);
-    const e = new Date(Number(year) + 1, 0, 1);
-    return Math.round((e - s) / (1000 * 60 * 60 * 24));
-  })();
-  // Compute daysElapsed: if current year, use days so far; else, use full year
-  const yearStart = new Date(Number(year), 0, 1);
-  const daysElapsed = isCurrent
-    ? Math.min(
-        daysInYear,
-        Math.floor((now - yearStart) / (1000 * 60 * 60 * 24)) + 1
-      )
-    : daysInYear;
   const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
+
+  const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
+
+  // Current streak: count consecutive done days ending at period end.
+  let currentStreak = 0;
+  for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) currentStreak += 1;
+    else break;
+  }
+
+  // Best streak within the period.
+  let bestStreak = 0;
+  let run = 0;
+  for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) {
+      run += 1;
+      bestStreak = Math.max(bestStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+
+  const goalTotal = goalForPeriod(habit, { mode, year });
+  const expectedToDate = goalTotal > 0 ? (goalTotal * (daysElapsed / Math.max(1, daysTotal))) : 0;
+  const onTrackPct = goalTotal > 0 && expectedToDate > 0 ? total / expectedToDate : null;
+
+  const remainingDays = Math.max(0, daysTotal - daysElapsed);
+  const remaining = Math.max(0, goalTotal - total);
+  const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
 
   return {
     total,
@@ -394,41 +461,86 @@ function habitStats(habit, entries, year) {
     best,
     avgPerLoggedDay,
     avgPerDay,
-    avgLast7,
+    daysElapsed,
+    daysTotal,
+    coveragePct,
+    currentStreak,
+    bestStreak,
+    goalTotal,
+    expectedToDate,
+    onTrackPct,
+    requiredPerDay,
   };
 }
 
 function habitStatsMonth(habit, entries, year, month) {
+  const mode = "month";
+  const bounds = periodBounds({ mode, year, month });
+  const startISO = isoFromDate(bounds.start);
+  const endISO = isoFromDate(bounds.end);
+
   const dates = Object.keys(entries)
-    .filter((d) => withinMonth(d, year, month))
+    .filter((d) => d >= startISO && d <= endISO)
     .sort();
 
   let total = 0;
   let daysLogged = 0;
   let best = null;
 
+  const doneSet = new Set();
+
   for (const d of dates) {
     const e = getEntry(entries, d, habit.id);
     if (!e) continue;
+
     daysLogged += 1;
+
     const v = entryToNumber(habit, e, 0);
     total += v;
+
     if (habit.type === "number") {
       best = best === null ? v : Math.max(best, v);
     }
+
+    if (entryCountsAsDone(habit, e)) {
+      doneSet.add(d);
+    }
   }
 
+  const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
+  const daysTotal = daysBetweenInclusive(bounds.start, bounds.endFull);
+
   const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
+  const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
 
-  // Compute avgPerDay for the month (accounting for month length and elapsed days if current)
-  const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
-  const start = new Date(year, mIndex, 1);
-  const endOfMonth = new Date(year, mIndex + 1, 0);
+  const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
 
-  const now = new Date();
-  const isCurrent = Number(year) === now.getFullYear() && mIndex === now.getMonth();
-  const daysInPeriod = isCurrent ? Math.min(endOfMonth.getDate(), now.getDate()) : endOfMonth.getDate();
-  const avgPerDay = daysInPeriod > 0 ? total / daysInPeriod : 0;
+  let currentStreak = 0;
+  for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) currentStreak += 1;
+    else break;
+  }
+
+  let bestStreak = 0;
+  let run = 0;
+  for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) {
+      run += 1;
+      bestStreak = Math.max(bestStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+
+  const goalTotal = goalForPeriod(habit, { mode, year, month });
+  const expectedToDate = goalTotal > 0 ? (goalTotal * (daysElapsed / Math.max(1, daysTotal))) : 0;
+  const onTrackPct = goalTotal > 0 && expectedToDate > 0 ? total / expectedToDate : null;
+
+  const remainingDays = Math.max(0, daysTotal - daysElapsed);
+  const remaining = Math.max(0, goalTotal - total);
+  const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
 
   return {
     total,
@@ -436,7 +548,15 @@ function habitStatsMonth(habit, entries, year, month) {
     best,
     avgPerLoggedDay,
     avgPerDay,
-    avgLast7: 0,
+    daysElapsed,
+    daysTotal,
+    coveragePct,
+    currentStreak,
+    bestStreak,
+    goalTotal,
+    expectedToDate,
+    onTrackPct,
+    requiredPerDay,
   };
 }
 
@@ -540,9 +660,7 @@ function buildHabitSeriesMonth(habit, entries, year, month) {
   return out;
 }
 
-// =====================
-// Supabase mappers + loading
-// =====================
+// --- Supabase Mappers & Loading ---
 function habitFromRow(r) {
   const legacyGoal = Number(r.goal_daily ?? 0);
   const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(r.goal_period) ? r.goal_period : "daily";
@@ -646,10 +764,8 @@ async function loadCloudForYear({ userId, year }) {
   };
 }
 
-// =====================
-// Hooks
-// =====================
-// Small hook to detect mobile screens
+// --- Hooks ---
+// Detect mobile screens
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -670,9 +786,7 @@ function useIsMobile() {
   return isMobile;
 }
 
-// =====================
-// UI helpers + components
-// =====================
+// --- UI Helpers & Components ---
 function formatStatTotal(habit, total) {
   if (habit.type === "checkbox") return `${Math.round(total)} days`;
   const dec = habitDecimals(habit);
@@ -690,6 +804,31 @@ function formatStatBest(habit, best) {
   if (best === null || best === undefined) return "";
   const dec = habitDecimals(habit);
   return `${formatNumberWithDecimals(best, dec)} ${habit.unit || ""}`.trim();
+}
+
+function formatPct01(x) {
+  const n = Number(x);
+  if (!Number.isFinite(n)) return "";
+  return `${Math.round(n * 100)}%`;
+}
+
+function formatStreakDays(n) {
+  const v = Number(n ?? 0);
+  if (!Number.isFinite(v) || v <= 0) return "0";
+  return String(Math.round(v));
+}
+
+function formatRequired(habit, v) {
+  if (v === null || v === undefined) return "";
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+
+  if (habit.type === "checkbox") {
+    return `${n.toFixed(2)} / day`;
+  }
+
+  const dec = habitDecimals(habit);
+  return `${formatNumberWithDecimals(n, dec)} ${habit.unit || ""}`.trim();
 }
 
 function MiniStat({ label, value }) {
@@ -798,15 +937,41 @@ function GlassTooltip({ active, label, payload, formatter, labelFormatter }) {
   );
 }
 
-function HabitStatsGrid({ habit, stats }) {
+function HabitStatsGrid({ habit, stats, mode }) {
   if (!habit) return null;
+
+  const isMonth = mode === "month";
+
+  const coverageText = stats ? formatPct01(stats.coveragePct) : "";
+
+  const onTrackText = (() => {
+    if (!stats) return "";
+    if (stats.onTrackPct === null) return "";
+    return formatPct01(stats.onTrackPct);
+  })();
+
+  const requiredText = stats ? formatRequired(habit, stats.requiredPerDay) : "";
+  const goalText = stats && stats.goalTotal > 0 ? formatStatTotal(habit, stats.goalTotal) : "";
+  const daysLoggedText = stats ? `${Math.round(stats.daysLogged || 0)} days` : "";
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
+      {/* Row 1: Actual vs Goal, then pacing */}
       <MiniStat label="Total" value={stats ? formatStatTotal(habit, stats.total) : ""} />
-      <MiniStat label="Avg logged" value={stats ? formatStatAvg(habit, stats.avgPerLoggedDay) : ""} />
+      <MiniStat label="Goal" value={goalText} />
+      <MiniStat label="On track" value={onTrackText} />
+      <MiniStat label="Coverage" value={coverageText} />
+
+      {/* Row 2: Averages and supporting context */}
       <MiniStat label="Avg/day" value={stats ? formatStatAvg(habit, stats.avgPerDay) : ""} />
+      <MiniStat label="Avg logged" value={stats ? formatStatAvg(habit, stats.avgPerLoggedDay) : ""} />
       <MiniStat label="Best day" value={stats ? formatStatBest(habit, stats.best) : ""} />
+
+      {isMonth ? (
+        <MiniStat label="Days logged" value={daysLoggedText} />
+      ) : (
+        <MiniStat label="Req/day" value={requiredText} />
+      )}
     </div>
   );
 }
@@ -1086,13 +1251,7 @@ function PublicView({ token }) {
                         <SelectItem value="month">Month Summary</SelectItem>
                       </SelectContent>
                     </Select>
-                    <div />
-                  </div>
-
-                  <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
-
-                  {dashboardSummaryMode === "month" ? (
-                    <div className="flex items-center gap-2">
+                    {dashboardSummaryMode === "month" ? (
                       <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
                         <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
                           <SelectValue placeholder="Month" />
@@ -1112,8 +1271,12 @@ function PublicView({ token }) {
                           <SelectItem value="12">Dec</SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
-                  ) : null}
+                    ) : (
+                      <div />
+                    )}
+                  </div>
+
+                  <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -1135,7 +1298,7 @@ function PublicView({ token }) {
               <CardContent className="space-y-3">
                 {focusedHabit ? (
                   <>
-                    <HabitStatsGrid habit={focusedHabit} stats={focusedStats} />
+                    <HabitStatsGrid habit={focusedHabit} stats={focusedStats} mode={dashboardSummaryMode} />
 
                     <TrendChart
                       series={focusedSeries}
@@ -1170,7 +1333,7 @@ function PublicView({ token }) {
                       return { id: h.id, label: h.name, value: entryToDisplay(h, e) };
                     })
                     .filter(Boolean);
-                  const expanded = Boolean(expandedDates[d]);
+                  const expanded = !!expandedDates[d];
                   return (
                     <div key={d} className="rounded-2xl bg-background/60 shadow-sm p-3">
                       <div
@@ -1178,7 +1341,7 @@ function PublicView({ token }) {
                         onClick={() =>
                           setExpandedDates((prev) => ({
                             ...(prev || {}),
-                            [d]: !Boolean(prev?.[d]),
+                            [d]: !prev?.[d],
                           }))
                         }
                         role="button"
@@ -1187,7 +1350,7 @@ function PublicView({ token }) {
                           if (e.key === "Enter" || e.key === " ") {
                             setExpandedDates((prev) => ({
                               ...(prev || {}),
-                              [d]: !Boolean(prev?.[d]),
+                              [d]: !prev?.[d],
                             }));
                           }
                         }}
@@ -1225,9 +1388,7 @@ function PublicView({ token }) {
   );
 }
 
-// =====================
-// Main component
-// =====================
+// --- Main Component ---
 export default function HabitTrackerMVP() {
   const [session, setSession] = useState(null);
   const [cloudReady, setCloudReady] = useState(false);
@@ -2015,15 +2176,7 @@ export default function HabitTrackerMVP() {
                           <SelectItem value="month">Month Summary</SelectItem>
                         </SelectContent>
                       </Select>
-
-                      {/* intentionally empty right side */}
-                      <div />
-                    </div>
-
-                    <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
-
-                    {dashboardSummaryMode === "month" ? (
-                      <div className="flex items-center gap-2">
+                      {dashboardSummaryMode === "month" ? (
                         <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
                           <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
                             <SelectValue placeholder="Month" />
@@ -2043,8 +2196,12 @@ export default function HabitTrackerMVP() {
                             <SelectItem value="12">Dec</SelectItem>
                           </SelectContent>
                         </Select>
-                      </div>
-                    ) : null}
+                      ) : (
+                        <div />
+                      )}
+                    </div>
+
+                    <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
@@ -2070,7 +2227,7 @@ export default function HabitTrackerMVP() {
                 <CardContent className="space-y-3">
                   {focusedHabit ? (
                     <>
-                      <HabitStatsGrid habit={focusedHabit} stats={focusedStats} />
+                      <HabitStatsGrid habit={focusedHabit} stats={focusedStats} mode={dashboardSummaryMode} />
 
                       <TrendChart
                         series={focusedSeries}
