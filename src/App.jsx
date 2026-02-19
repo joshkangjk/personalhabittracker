@@ -1046,10 +1046,20 @@ function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) {
   );
 }
 
-function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
+function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = "year" }) {
   if (!items || items.length === 0) {
     return <div className="text-sm text-muted-foreground">No habits yet.</div>;
   }
+
+  const labelFor = (stats) => {
+    const logged = Math.round(Number(stats?.daysLogged ?? 0));
+    // daysElapsed is already "to date" for current periods, and equals full length for past periods
+    const elapsed = Math.round(Number(stats?.daysElapsed ?? stats?.daysTotal ?? 0));
+    const denom = elapsed > 0 ? elapsed : Math.round(Number(stats?.daysTotal ?? 0));
+
+    if (denom > 0) return `${logged}/${denom} days logged`;
+    return `${logged} days logged`;
+  };
 
   return (
     <div className="space-y-2">
@@ -1070,7 +1080,7 @@ function YearSummaryList({ items, selectedHabitId, onSelectHabit }) {
             </div>
           </div>
           <div className="mt-1.5 text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">{stats.daysLogged}</span> days logged
+            <span className="font-medium text-foreground">{labelFor(stats)}</span>
           </div>
         </button>
       ))}
@@ -1284,6 +1294,7 @@ function PublicView({ token }) {
                   items={dashboardSummaryItems}
                   selectedHabitId={effectiveFocusedHabitId}
                   onSelectHabit={(id) => setFocusedHabitId(id)}
+                  mode={dashboardSummaryMode}
                 />
               </CardContent>
             </Card>
@@ -2212,6 +2223,7 @@ export default function HabitTrackerMVP() {
                       items={dashboardSummaryItems}
                       selectedHabitId={effectiveFocusedHabitId}
                       onSelectHabit={(id) => setFocusedHabitId(id)}
+                      mode={dashboardSummaryMode}
                     />
                   )}
                 </CardContent>
