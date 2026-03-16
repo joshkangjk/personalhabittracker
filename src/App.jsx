@@ -84,6 +84,8 @@ function normalizeGoals(goals) {
   };
 }
 
+// src/App.jsx
+
 function normalizeYearlyGoalFromGoals(goals) {
   const g = goals && typeof goals === "object" ? goals : {};
   const n = (v) => {
@@ -91,19 +93,17 @@ function normalizeYearlyGoalFromGoals(goals) {
     return Number.isFinite(x) && x > 0 ? x : 0;
   };
 
-  // Prefer explicitly set yearly goal
   const yearly = n(g.yearly);
   if (yearly > 0) return yearly;
 
-  // Back-compat: derive a yearly goal if only other periods exist
-  const daily = n(g.daily);
-  if (daily > 0) return daily * 365;
+  const monthly = n(g.monthly);
+  if (monthly > 0) return monthly * 12;
 
   const weekly = n(g.weekly);
   if (weekly > 0) return weekly * 52;
 
-  const monthly = n(g.monthly);
-  if (monthly > 0) return monthly * 12;
+  const daily = n(g.daily);
+  if (daily > 0) return daily * 365;
 
   return 0;
 }

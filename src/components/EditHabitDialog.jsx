@@ -22,21 +22,22 @@ export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNum
   const [goalValue, setGoalValue] = useState(() => (initialValue > 0 ? String(initialValue) : ""));
   const [goalEnabled, setGoalEnabled] = useState(() => Boolean(initialValue > 0));
 
-  function save() {
-    const baseGoals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
-    const nextGoals =
-      goalEnabled && goalValue !== "" && Number(goalValue) > 0
-        ? { ...baseGoals, [goalPeriod]: clampNumber(goalValue) }
-        : {};
+function save() {
+  
+  const nextGoals =
+    goalEnabled && goalValue !== "" && Number(goalValue) > 0
+      ? { [goalPeriod]: clampNumber(goalValue) } // REMOVE ...baseGoals here
+      : {};
 
-    const patch = {
-      name: name.trim() || habit.name,
-      goals: nextGoals,
-    };
-    if (habit.type === "number") patch.unit = unit.trim() || habit.unit || "value";
-    onSave(patch);
-    setOpen(false);
-  }
+  const patch = {
+    name: name.trim() || habit.name,
+    goals: nextGoals,
+  };
+  
+  if (habit.type === "number") patch.unit = unit.trim() || habit.unit || "value";
+  onSave(patch);
+  setOpen(false);
+}
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

@@ -225,8 +225,11 @@ export default function HabitLogRow({
               <GripVertical className="h-4 w-4" />
             </div>
 
+            // src/components/HabitLogRow.jsx
+
             <EditHabitDialog
-              key={habit.id}
+              // Add habit.goals to the key to force a refresh when the goal changes
+              key={`${habit.id}-${JSON.stringify(habit.goals)}`} 
               habit={habit}
               onSave={onEditHabit}
               onDeleteHabit={onDelete}
