@@ -84,8 +84,6 @@ function normalizeGoals(goals) {
   };
 }
 
-// src/App.jsx
-
 function normalizeYearlyGoalFromGoals(goals) {
   const g = goals && typeof goals === "object" ? goals : {};
   const n = (v) => {
