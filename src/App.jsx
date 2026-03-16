@@ -15,18 +15,648 @@ import AddHabitDialog from "./components/AddHabitDialog";
 import HabitLogRow from "./components/HabitLogRow";
 import HistoryDay from "./components/HistoryDay";
 
-import { 
-  useHabitStats, 
-  todayISO, 
-  uuid, 
-  clampNumber, 
-  habitDecimals, 
-  formatNumberWithDecimals,
-  entryToDisplay
-} from "./hooks/useHabitStats";
-
 // --- Constants ---
 const STORAGE_KEY = "pookie_habit_tracker_v1";
+
+// --- Date & Number Utilities ---
+
+function isoFromDate(d) {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function todayISO() {
+  return isoFromDate(new Date());
+}
+
+function clampNumber(v) {
+  const n = Number(v);
+  if (Number.isNaN(n)) return 0;
+  return n;
+}
+
+function countDecimalsFromValue(v) {
+  if (v === null || v === undefined) return 0;
+  const s = String(v);
+  const parts = s.split(".");
+  return parts[1] ? parts[1].length : 0;
+}
+
+function habitDecimals(habit) {
+  if (habit?.type !== "number") return 0;
+  const d = Number(habit?.decimals);
+  if (Number.isFinite(d) && d >= 0 && d <= 6) return d;
+  return 0;
+}
+
+function formatNumberWithDecimals(n, decimals) {
+  const v = Number(n ?? 0);
+  if (!Number.isFinite(v)) return "0";
+
+  if (decimals > 0) {
+    return v.toFixed(decimals);
+  }
+
+  if (Number.isInteger(v)) {
+    return String(v);
+  }
+
+  return v
+    .toFixed(2)
+    .replace(/\.00$/, "")
+    .replace(/(\.\d)0$/, "$1");
+}
+
+function normalizeGoals(goals) {
+  const g = goals && typeof goals === "object" ? goals : {};
+  const n = (v) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) && x > 0 ? x : 0;
+  };
+
+  return {
+    daily: n(g.daily),
+    weekly: n(g.weekly),
+    monthly: n(g.monthly),
+    yearly: n(g.yearly),
+  };
+}
+
+function normalizeYearlyGoalFromGoals(goals) {
+  const g = goals && typeof goals === "object" ? goals : {};
+  const n = (v) => {
+    const x = Number(v ?? 0);
+    return Number.isFinite(x) && x > 0 ? x : 0;
+  };
+
+  const yearly = n(g.yearly);
+  if (yearly > 0) return yearly;
+
+  const monthly = n(g.monthly);
+  if (monthly > 0) return monthly * 12;
+
+  const weekly = n(g.weekly);
+  if (weekly > 0) return weekly * 52;
+
+  const daily = n(g.daily);
+  if (daily > 0) return daily * 365;
+
+  return 0;
+}
+
+function getYearlyGoal(habit) {
+  return normalizeYearlyGoalFromGoals(habit?.goals);
+}
+
+// --- Local Storage State ---
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+// --- Generic Helpers ---
+function uuid() {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+  return `${Math.random().toString(16).slice(2)}${Date.now()}`;
+}
+
+function makeShareToken() {
+  try {
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes)
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+  } catch {
+    // ignore
+  }
+  return `${Math.random().toString(16).slice(2)}${Date.now()}`;
+}
+
+function formatPrettyDate(iso) {
+  try {
+    const [y, m, d] = iso.split("-");
+    if (!y || !m || !d) return iso;
+    return `${d.padStart(2, "0")}-${m.padStart(2, "0")}-${y}`;
+  } catch {
+    return iso;
+  }
+}
+
+function formatAxisDate(iso) {
+  try {
+    const [y, m, d] = String(iso || "").split("-");
+    if (!y || !m || !d) return String(iso || "");
+    const date = new Date(Number(y), Number(m) - 1, Number(d));
+    return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(date);
+  } catch {
+    return String(iso || "");
+  }
+}
+
+function withinYear(iso, year) {
+  return iso >= `${year}-01-01` && iso <= `${year}-12-31`;
+}
+
+
+function monthFromISO(iso) {
+  return iso?.slice(5, 7) || "";
+}
+
+
+function daysBetweenInclusive(startDate, endDate) {
+  return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+}
+
+
+function periodBounds({ mode, year, month }) {
+  const y = Number(year);
+  const now = new Date();
+
+  if (mode === "month") {
+    const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
+    const start = new Date(y, mIndex, 1);
+    const endFull = new Date(y, mIndex + 1, 0);
+
+    const isCurrent = y === now.getFullYear() && mIndex === now.getMonth();
+    const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : endFull;
+
+    return { start, end, endFull, isCurrent };
+  }
+
+  const start = new Date(y, 0, 1);
+  const endFull = new Date(y, 11, 31);
+  const isCurrent = y === now.getFullYear();
+  const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : endFull;
+
+  return { start, end, endFull, isCurrent };
+}
+
+function goalForPeriod(habit, { mode, year, month }) {
+  const goals = normalizeGoals(habit?.goals);
+
+  // If a goal is explicitly set for the period, prefer it.
+  if (mode === "month" && goals.monthly > 0) return goals.monthly;
+  if (mode === "year" && goals.yearly > 0) return goals.yearly;
+
+  // Otherwise derive from yearly goal if present.
+  const yearly = clampNumber(getYearlyGoal(habit));
+  if (yearly > 0) {
+    if (mode === "month") return yearly / 12;
+    return yearly;
+  }
+
+  // Derive from daily goal if present.
+  if (goals.daily > 0) {
+    const bounds = periodBounds({ mode, year, month });
+    const totalDays = daysBetweenInclusive(bounds.start, bounds.endFull);
+    return goals.daily * totalDays;
+  }
+
+  // Derive from weekly goal if present.
+  if (goals.weekly > 0) {
+    const bounds = periodBounds({ mode, year, month });
+    const totalDays = daysBetweenInclusive(bounds.start, bounds.endFull);
+    const weeks = totalDays / 7;
+    return goals.weekly * weeks;
+  }
+
+  return 0;
+}
+
+function entryCountsAsDone(habit, entry) {
+  if (!entry) return false;
+  if (habit?.type === "checkbox") return Boolean(entry.value);
+  // For number habits, treat any positive value as done.
+  const v = clampNumber(entry.value);
+  return v > 0;
+}
+
+function isoRangeForYear(year) {
+  return {
+    start: `${year}-01-01`,
+    end: `${year}-12-31`,
+  };
+}
+
+function buildYearOptions() {
+  const y = new Date().getFullYear();
+  return [y, y + 1];
+}
+
+function getPublicTokenFromPath() {
+  try {
+    const p = window.location.pathname || "";
+    const m = p.match(/^\/view\/([^/]+)\/?$/);
+    return m ? decodeURIComponent(m[1]) : "";
+  } catch {
+    return "";
+  }
+}
+
+// --- Chart Helpers ---
+function chartGradientId(prefix, habitId) {
+  return `${prefix}_actual_${String(habitId || "none")}`;
+}
+
+function isCurrentYear(year) {
+  return Number(year) === new Date().getFullYear();
+}
+
+// --- State Shape & Defaults ---
+function defaultState() {
+  const year = new Date().getFullYear();
+  return {
+    habits: [
+      {
+        id: uuid(),
+        name: "Pushups",
+        unit: "reps",
+        decimals: 0,
+        type: "number",
+        goals: { daily: 50 },
+      },
+      {
+        id: uuid(),
+        name: "Read",
+        type: "checkbox",
+        goals: { daily: 1 },
+      },
+    ],
+    entries: {},
+    ui: {
+      selectedYear: year,
+    },
+  };
+}
+
+function ensureStateShape(s) {
+  if (!s || typeof s !== "object") return defaultState();
+  if (!Array.isArray(s.habits)) s.habits = [];
+  if (!s.entries || typeof s.entries !== "object") s.entries = {};
+  if (!s.ui || typeof s.ui !== "object") s.ui = { selectedYear: new Date().getFullYear() };
+  if (!s.ui.selectedYear) s.ui.selectedYear = new Date().getFullYear();
+  const cy = new Date().getFullYear();
+  // Allow browsing past years; only guard against obviously invalid values.
+  if (!Number.isFinite(Number(s.ui.selectedYear))) s.ui.selectedYear = cy;
+  s.habits = (s.habits || []).map((h) => {
+    if (!h || typeof h !== "object") return h;
+
+    // migrate legacy fields -> goals
+    const legacyGoal = Number(h.goalDaily ?? 0);
+    const legacyPeriod = ["daily", "weekly", "monthly", "yearly"].includes(h.goalPeriod) ? h.goalPeriod : "daily";
+
+    let goals = normalizeGoals(h.goals);
+    const hasAny = goals.daily || goals.weekly || goals.monthly || goals.yearly;
+
+    if (!hasAny && legacyGoal > 0) {
+      goals = { ...goals, [legacyPeriod]: legacyGoal };
+    }
+
+    if (h.type !== "number") return { ...h, goals };
+
+    if (h.decimals === undefined) return { ...h, decimals: 0, goals };
+
+    return { ...h, goals };
+  });
+  return s;
+}
+
+// --- Entry Helpers ---
+function getEntry(entries, dateISO, habitId) {
+  return entries?.[dateISO]?.[habitId] ?? null;
+}
+
+function entryToNumber(habit, entry, fallback = 0) {
+  if (!entry) return fallback;
+  return habit.type === "checkbox" ? (entry.value ? 1 : 0) : clampNumber(entry.value);
+}
+
+function entryToDisplay(habit, entry) {
+  if (habit.type === "checkbox") return entry?.value ? "Done" : "Not done";
+  const dec = habitDecimals(habit);
+  const unit = habit.unit || "";
+  return `${formatNumberWithDecimals(entry?.value ?? 0, dec)} ${unit}`.trim();
+}
+
+function setEntry(entries, dateISO, habitId, payload) {
+  const next = { ...entries };
+  const day = { ...(next[dateISO] || {}) };
+  day[habitId] = payload;
+  next[dateISO] = day;
+  return next;
+}
+
+function deleteEntry(entries, dateISO, habitId) {
+  const next = { ...entries };
+  if (!next[dateISO]) return next;
+  const day = { ...next[dateISO] };
+  delete day[habitId];
+  if (Object.keys(day).length === 0) {
+    delete next[dateISO];
+  } else {
+    next[dateISO] = day;
+  }
+  return next;
+}
+
+function listDatesInYear(entries, year) {
+  return Object.keys(entries)
+    .filter((d) => withinYear(d, year))
+    .sort((a, b) => (a < b ? 1 : -1));
+}
+
+// --- Stats & Chart Series ---
+
+function habitStats(habit, entries, year) {
+  const mode = "year";
+  const bounds = periodBounds({ mode, year });
+  const startISO = isoFromDate(bounds.start);
+  const endISO = isoFromDate(bounds.end);
+
+  const dates = Object.keys(entries)
+    .filter((d) => d >= startISO && d <= endISO)
+    .sort();
+
+  let total = 0;
+  let daysLogged = 0;
+  let best = null;
+
+  // For streaks we need per-day done flags.
+  const doneSet = new Set();
+
+  for (const d of dates) {
+    const e = getEntry(entries, d, habit.id);
+    if (!e) continue;
+
+    daysLogged += 1;
+
+    const v = entryToNumber(habit, e, 0);
+    total += v;
+
+    if (habit.type === "number") {
+      best = best === null ? v : Math.max(best, v);
+    }
+
+    if (entryCountsAsDone(habit, e)) {
+      doneSet.add(d);
+    }
+  }
+
+  const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
+  const daysTotal = daysBetweenInclusive(bounds.start, bounds.endFull);
+
+  const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
+  const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
+
+  const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
+
+  // Current streak: count consecutive done days ending at period end.
+  let currentStreak = 0;
+  for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) currentStreak += 1;
+    else break;
+  }
+
+  // Best streak within the period.
+  let bestStreak = 0;
+  let run = 0;
+  for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) {
+      run += 1;
+      bestStreak = Math.max(bestStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+
+  const goalTotal = goalForPeriod(habit, { mode, year });
+  const expectedToDate = goalTotal > 0 ? (goalTotal * (daysElapsed / Math.max(1, daysTotal))) : 0;
+  const onTrackPct = goalTotal > 0 && expectedToDate > 0 ? total / expectedToDate : null;
+
+  const remainingDays = Math.max(0, daysTotal - daysElapsed);
+  const remaining = Math.max(0, goalTotal - total);
+  const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
+
+  return {
+    total,
+    daysLogged,
+    best,
+    avgPerLoggedDay,
+    avgPerDay,
+    daysElapsed,
+    daysTotal,
+    coveragePct,
+    currentStreak,
+    bestStreak,
+    goalTotal,
+    expectedToDate,
+    onTrackPct,
+    requiredPerDay,
+  };
+}
+
+function habitStatsMonth(habit, entries, year, month) {
+  const mode = "month";
+  const bounds = periodBounds({ mode, year, month });
+  const startISO = isoFromDate(bounds.start);
+  const endISO = isoFromDate(bounds.end);
+
+  const dates = Object.keys(entries)
+    .filter((d) => d >= startISO && d <= endISO)
+    .sort();
+
+  let total = 0;
+  let daysLogged = 0;
+  let best = null;
+
+  const doneSet = new Set();
+
+  for (const d of dates) {
+    const e = getEntry(entries, d, habit.id);
+    if (!e) continue;
+
+    daysLogged += 1;
+
+    const v = entryToNumber(habit, e, 0);
+    total += v;
+
+    if (habit.type === "number") {
+      best = best === null ? v : Math.max(best, v);
+    }
+
+    if (entryCountsAsDone(habit, e)) {
+      doneSet.add(d);
+    }
+  }
+
+  const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
+  const daysTotal = daysBetweenInclusive(bounds.start, bounds.endFull);
+
+  const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
+  const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
+
+  const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
+
+  let currentStreak = 0;
+  for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) currentStreak += 1;
+    else break;
+  }
+
+  let bestStreak = 0;
+  let run = 0;
+  for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+    if (doneSet.has(iso)) {
+      run += 1;
+      bestStreak = Math.max(bestStreak, run);
+    } else {
+      run = 0;
+    }
+  }
+
+  const goalTotal = goalForPeriod(habit, { mode, year, month });
+  const expectedToDate = goalTotal > 0 ? (goalTotal * (daysElapsed / Math.max(1, daysTotal))) : 0;
+  const onTrackPct = goalTotal > 0 && expectedToDate > 0 ? total / expectedToDate : null;
+
+  const remainingDays = Math.max(0, daysTotal - daysElapsed);
+  const remaining = Math.max(0, goalTotal - total);
+  const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
+
+  return {
+    total,
+    daysLogged,
+    best,
+    avgPerLoggedDay,
+    avgPerDay,
+    daysElapsed,
+    daysTotal,
+    coveragePct,
+    currentStreak,
+    bestStreak,
+    goalTotal,
+    expectedToDate,
+    onTrackPct,
+    requiredPerDay,
+  };
+}
+
+function buildHabitSeries(habit, entries, year) {
+  // Start at Jan 1 of the selected year (not first log date)
+  const start = new Date(year, 0, 1);
+
+  // End at today if it's the current year, otherwise end at Dec 31
+  const now = new Date();
+  const end =
+    year === now.getFullYear()
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
+      : new Date(year, 11, 31);
+
+  // Goal setup (single yearly goal)
+  const goalYearly = clampNumber(getYearlyGoal(habit));
+
+  const daysInYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y + 1, 0, 1);
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  };
+
+  const goalPerDayForDate = (dateObj) => {
+    if (!(goalYearly > 0)) return 0;
+    return goalYearly / daysInYear(dateObj.getFullYear());
+  };
+
+  let actualCum = 0;
+  let goalCum = 0;
+
+  const out = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+
+    const e = getEntry(entries, iso, habit.id);
+
+    const daily = entryToNumber(habit, e, 0);
+
+    actualCum += daily;
+    if (goalYearly > 0) goalCum += goalPerDayForDate(d);
+
+    out.push({
+      date: iso,
+      daily,
+      actualCum,
+      goalCum: goalYearly > 0 ? goalCum : null,
+    });
+  }
+
+  return out;
+}
+
+function buildHabitSeriesMonth(habit, entries, year, month) {
+  // Month is a 2-digit string: "01".."12"
+  const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
+
+  // Start at first day of the month
+  const start = new Date(year, mIndex, 1);
+
+  // End at today if current year+month, otherwise last day of month
+  const now = new Date();
+  const isCurrent = year === now.getFullYear() && mIndex === now.getMonth();
+  const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : new Date(year, mIndex + 1, 0);
+
+  // Goal setup (single yearly goal, distributed across the year)
+  const goalYearly = clampNumber(getYearlyGoal(habit));
+
+  const daysInYear = (y) => {
+    const s = new Date(y, 0, 1);
+    const e = new Date(y + 1, 0, 1);
+    return Math.round((e - s) / (1000 * 60 * 60 * 24));
+  };
+
+  const goalPerDayForDate = (dateObj) => {
+    if (!(goalYearly > 0)) return 0;
+    return goalYearly / daysInYear(dateObj.getFullYear());
+  };
+
+  let actualCum = 0;
+  let goalCum = 0;
+
+  const out = [];
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const iso = isoFromDate(d);
+
+    const e = getEntry(entries, iso, habit.id);
+    const daily = entryToNumber(habit, e, 0);
+
+    actualCum += daily;
+    if (goalYearly > 0) goalCum += goalPerDayForDate(d);
+
+    out.push({
+      date: iso,
+      daily,
+      actualCum,
+      goalCum: goalYearly > 0 ? goalCum : null,
+    });
+  }
+
+  return out;
+}
 
 // --- Supabase Mappers & Loading ---
 function habitFromRow(r) {
