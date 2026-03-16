@@ -21,7 +21,8 @@ import {
   uuid, 
   clampNumber, 
   habitDecimals, 
-  formatNumberWithDecimals 
+  formatNumberWithDecimals,
+  entryToDisplay
 } from "./hooks/useHabitStats";
 
 // --- Constants ---
