@@ -2,7 +2,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, ListX } from "lucide-react";
 
@@ -30,19 +29,28 @@ export default function DailyLogTab({
 }) {
   return (
     <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm transition-shadow hover:shadow-md">
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-        <div className="space-y-1">
-          <CardTitle className="whitespace-nowrap text-base font-semibold tracking-tight">Daily Log</CardTitle>
+      
+      {/* UPDATED HEADER: Responsive stacking and spacing */}
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4">
+        
+        {/* Mobile Top Row / Desktop Left Side */}
+        <div className="flex items-center justify-between w-full md:w-auto">
+          <CardTitle className="text-base font-semibold tracking-tight">Daily Log</CardTitle>
+          {/* Mobile 'Add Habit' button */}
+          <div className="md:hidden block">
+            <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
+          </div>
         </div>
-        <div className="flex items-center justify-between gap-3 w-full md:flex-row md:items-center md:justify-end md:gap-6">
+
+        {/* Mobile Bottom Row / Desktop Right Side */}
+        <div className="flex items-center justify-center md:justify-end gap-4 w-full md:w-auto">
           
-          <div className="flex items-center gap-1 flex-1 md:order-2 md:flex-none">
-            <Label className="hidden md:block text-xs text-muted-foreground mr-2">Date</Label>
-            
+          {/* PREMIUM DATE PICKER PILL */}
+          <div className="flex items-center bg-background/80 md:bg-muted/40 shadow-sm md:shadow-none border md:border-0 border-border/40 rounded-2xl p-1">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-9 w-9" 
+              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground" 
               onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, -1) } })}
             >
               <ChevronLeft className="h-4 w-4" />
@@ -52,13 +60,13 @@ export default function DailyLogTab({
               type="date"
               value={activeDate}
               onChange={handleActiveDateChange}
-              className="w-[130px] rounded-xl bg-background/60 shadow-sm border-0 text-center focus-visible:ring-2 focus-visible:ring-muted/30"
+              className="w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
             />
 
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-9 w-9" 
+              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground" 
               onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, 1) } })}
               disabled={activeDate >= todayISO()} 
             >
@@ -66,11 +74,13 @@ export default function DailyLogTab({
             </Button>
           </div>
 
-          <div className="shrink-0 md:order-1 md:w-auto">
+          {/* Desktop 'Add Habit' button */}
+          <div className="hidden md:block">
             <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
           </div>
         </div>
       </CardHeader>
+
       <CardContent className="space-y-3">
         <div className="grid gap-3">
           {habits.length === 0 ? (
