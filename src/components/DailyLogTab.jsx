@@ -30,8 +30,7 @@ export default function DailyLogTab({
   return (
     <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm transition-shadow hover:shadow-md">
       
-      {/* UPDATED HEADER: Responsive stacking and spacing */}
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 pb-4">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4">
         
         {/* Mobile Top Row / Desktop Left Side */}
         <div className="flex items-center justify-between w-full md:w-auto">
@@ -43,30 +42,31 @@ export default function DailyLogTab({
         </div>
 
         {/* Mobile Bottom Row / Desktop Right Side */}
-        <div className="flex items-center justify-center md:justify-end gap-4 w-full md:w-auto">
+        <div className="flex items-center w-full md:w-auto">
           
-          {/* PREMIUM DATE PICKER PILL */}
-          <div className="flex items-center bg-background/80 md:bg-muted/40 shadow-sm md:shadow-none border md:border-0 border-border/40 rounded-2xl p-1">
+          {/* iOS-STYLE FULL-WIDTH DATE PICKER PILL */}
+          <div className="flex items-center justify-between w-full md:w-auto bg-muted/40 shadow-sm md:shadow-none border border-border/40 md:border-0 rounded-2xl p-1 md:gap-1">
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground" 
+              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
               onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, -1) } })}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
             
+            {/* The w-full here allows it to flex perfectly on mobile while capping out on desktop */}
             <Input
               type="date"
               value={activeDate}
               onChange={handleActiveDateChange}
-              className="w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
+              className="w-full md:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
             />
 
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground" 
+              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
               onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, 1) } })}
               disabled={activeDate >= todayISO()} 
             >
@@ -75,7 +75,7 @@ export default function DailyLogTab({
           </div>
 
           {/* Desktop 'Add Habit' button */}
-          <div className="hidden md:block">
+          <div className="hidden md:block ml-4">
             <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
           </div>
         </div>
