@@ -1,3 +1,4 @@
+// src/components/HistoryDay.jsx
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,47 +32,55 @@ export default function HistoryDay({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setExpanded((v) => !v);
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
         }}
       >
-        <div className="flex items-center gap-2">
-          <div className={`text-sm tracking-tight ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
-            {formatPrettyDate(dateISO)}
-          </div>
+        <div className={`text-sm tracking-tight ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
+          {formatPrettyDate(dateISO)}
         </div>
-
         <div className={`text-xs transition-colors ${expanded ? "text-foreground/70" : "text-muted-foreground"}`}>
-          {items.length} entr{items.length === 1 ? "y" : "ies"}
+          {items.length} item{items.length === 1 ? "" : "s"}
         </div>
       </div>
 
-      {expanded && (
-        <div className="mt-3 grid gap-2">
-          {items.map(({ hid, habit, entry }) => (
-            <div key={hid} className="flex items-start justify-between gap-3 rounded-2xl bg-background/60 shadow-sm px-3 py-2">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium">{habit.name}</span>
+      {/* --- SMOOTH EXPANDING WRAPPER --- */}
+      <div 
+        className={`grid transition-all duration-300 ease-in-out ${
+          expanded ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="grid gap-2">
+            {items.map(({ hid, habit, entry }) => (
+              <div key={hid} className="flex items-start justify-between gap-3 rounded-2xl bg-background/60 shadow-sm px-3 py-2">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{habit.name}</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground">{entryToDisplay(habit, entry)}</div>
                 </div>
-                <div className="text-sm text-muted-foreground">{entryToDisplay(habit, entry)}</div>
-              </div>
 
-              <Button
-                variant="ghost"
-                className="h-9 px-3 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setPendingDelete({ hid, name: habit.name });
-                  setConfirmOpen(true);
-                }}
-              >
-                <Trash2 className="h-4 w-4" />
-                Remove
-              </Button>
-            </div>
-          ))}
+                <Button
+                  variant="ghost"
+                  className="h-9 px-3 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPendingDelete({ hid, name: habit.name });
+                    setConfirmOpen(true);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Remove
+                </Button>
+              </div>
+            ))}
+          </div>
         </div>
-      )}
+      </div>
+      {/* -------------------------------- */}
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="max-w-md">

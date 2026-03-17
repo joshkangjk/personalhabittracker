@@ -304,22 +304,22 @@ export default function HabitTrackerMVP() {
         </header>
 
         <Tabs defaultValue="log" className="w-full">
-          <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-2xl bg-muted/40/80 p-1.5 shadow-sm">
+          <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-full bg-muted/50 p-1 shadow-inner">
             <TabsTrigger
               value="log"
-              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Daily Log
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Dashboard
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
+              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               History
             </TabsTrigger>

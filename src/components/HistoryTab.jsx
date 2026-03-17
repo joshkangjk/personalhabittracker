@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CalendarX } from "lucide-react";
 import HistoryDay from "./HistoryDay";
 import { formatPrettyDate } from "../lib/helpers";
 import { entryToDisplay } from "../lib/stats";
@@ -45,7 +46,11 @@ export default function HistoryTab({
       </CardHeader>
       <CardContent className="space-y-4 pt-4">
         {filteredHistory.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No matching days found.</div>
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <CalendarX className="h-10 w-10 mb-3 opacity-20" />
+            <div className="text-sm font-medium">No history yet</div>
+            <div className="text-xs opacity-70">Your past logs will appear here.</div>
+          </div>
         ) : (
           <div className="space-y-2">
             {filteredHistory.map((d) => (

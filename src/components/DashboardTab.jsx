@@ -2,6 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { BarChart3 } from "lucide-react";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
 
 export default function DashboardTab({
@@ -64,7 +65,11 @@ export default function DashboardTab({
         </CardHeader>
         <CardContent className="space-y-3">
           {dashboardSummaryItems.length === 0 ? (
-            <div className="text-sm text-muted-foreground">Add habits to see stats.</div>
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <BarChart3 className="h-10 w-10 mb-3 opacity-20" />
+              <div className="text-sm font-medium">Not enough data</div>
+              <div className="text-xs opacity-70">Log some habits to see your trends.</div>
+            </div>
           ) : (
             <YearSummaryList
               items={dashboardSummaryItems}
@@ -97,7 +102,11 @@ export default function DashboardTab({
               <div className="h-2" />
             </>
           ) : (
-            <div className="text-sm text-muted-foreground">Add a habit first.</div>
+            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
+              <BarChart3 className="h-10 w-10 mb-3 opacity-20" />
+              <div className="text-sm font-medium">Not enough data</div>
+              <div className="text-xs opacity-70">Add a habit first to see your trends.</div>
+            </div>
           )}
         </CardContent>
       </Card>

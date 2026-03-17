@@ -1,3 +1,4 @@
+// src/components/HabitLogRow.jsx
 import React, { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,6 @@ export default function HabitLogRow({
   onTouchMoveDrag,
   onTouchEndDrag,
   touchDragging,
-
   clampNumber,
   habitDecimals,
   formatNumberWithDecimals,
@@ -50,137 +50,94 @@ export default function HabitLogRow({
     [committing]
   );
 
-  const goalText = useMemo(() => {
-    const goals = habit?.goals && typeof habit.goals === "object" ? habit.goals : {};
-    // Prefer the most coarse goal if multiple keys exist (e.g., after switching period in the edit dialog)
-    const order = ["yearly", "monthly", "weekly", "daily"];
-    const period = order.find((p) => Number(goals?.[p] ?? 0) > 0) || "daily";
-    const g = Number(goals?.[period] ?? 0);
-    if (!g) return "";
+  const handleCheckboxChange = (checked) => {
+    setValue(checked);
+    commitWithDelay(checked, onLog);
+  };
 
-    const periodLabel =
-      period === "weekly"
-        ? "per week"
-        : period === "monthly"
-          ? "per month"
-          : period === "yearly"
-            ? "per year"
-            : "per day";
+  const handleNumberChange = (e) => {
+    setValue(e.target.value);
+  };
 
-    if (habit.type === "checkbox") {
-      return `Goal: ${Math.round(g)}x ${periodLabel}`;
+  const handleNumberBlur = () => {
+    if (value === "" && !hasEntry) return;
+    const num = clampNumber(value);
+    setValue(num);
+    commitWithDelay(num, onLog);
+  };
+
+  const handleNumberKeyDown = (e) => {
+    if (e.key === "Enter") {
+      e.currentTarget.blur();
     }
+  };
 
-    const unit = habit.unit ? ` ${habit.unit}` : "";
-    const dec = habitDecimals(habit);
-    const amount = formatNumberWithDecimals(g, dec);
-    return `Goal: ${amount}${unit} ${periodLabel}`;
-  }, [habit, habitDecimals, formatNumberWithDecimals]);
+  const bump = (dir) => {
+    let current = clampNumber(value);
+    current += dir;
+    setValue(current);
+    commitWithDelay(current, onLog);
+  };
 
-  const save = useCallback(() => {
-    if (habit.type === "checkbox") {
-      onLog(Boolean(value));
-      return;
+  const handleTouchStart = (e) => {
+    if (onTouchStartDrag) onTouchStartDrag(e);
+  };
+  const handleTouchMove = (e) => {
+    if (onTouchMoveDrag && e.touches[0]) {
+      onTouchMoveDrag(e.touches[0].clientX, e.touches[0].clientY);
     }
-    if (value === "" || value === null || value === undefined) return;
-    const n = clampNumber(value);
-    onLog(n);
-  }, [habit.type, onLog, value, clampNumber]);
+  };
+  const handleTouchEnd = (e) => {
+    if (onTouchEndDrag) onTouchEndDrag(e);
+  };
 
-  const bump = useCallback(
-    (delta) => {
-      if (habit.type !== "number") return;
-      const current = value === "" || value === null || value === undefined ? 0 : clampNumber(value);
-      const next = Math.max(0, current + delta);
-      setValue(next);
-      commitWithDelay(next, onLog);
-    },
-    [habit.type, value, clampNumber, commitWithDelay, onLog]
-  );
-
-  const handleCheckboxChange = useCallback(
-    (v) => {
-      setValue(v);
-      commitWithDelay(Boolean(v), onLog);
-    },
-    [commitWithDelay, onLog]
-  );
-
-  const handleNumberChange = useCallback((e) => setValue(e.target.value), []);
-  const handleNumberBlur = useCallback(() => save(), [save]);
-
-  const handleNumberKeyDown = useCallback(
-    (e) => {
-      if (e.key === "Enter") {
-        e.currentTarget.blur();
-        save();
-      }
-    },
-    [save]
-  );
-
-  const handleTouchStart = useCallback(
-    (e) => {
-      e.preventDefault();
-      onTouchStartDrag?.();
-    },
-    [onTouchStartDrag]
-  );
-
-  const handleTouchMove = useCallback(
-    (e) => {
-      const t = e.touches?.[0];
-      if (!t) return;
-      onTouchMoveDrag?.(t.clientX, t.clientY);
-    },
-    [onTouchMoveDrag]
-  );
-
-  const handleTouchEnd = useCallback(() => onTouchEndDrag?.(), [onTouchEndDrag]);
+  const goalPeriod = ["daily", "weekly", "monthly", "yearly"].find((p) => Number(habit.goals?.[p] ?? 0) > 0);
+  const goalValue = goalPeriod ? Number(habit.goals[goalPeriod]) : 0;
+  const dec = habitDecimals(habit);
 
   return (
     <div
-      data-habit-id={habit.id}
-      className={`rounded-2xl bg-background/60 shadow-sm p-2.5 md:p-3 transition-colors hover:bg-accent/15 ${
-        dragging ? "opacity-60" : ""
-      }`}
+      className={`group rounded-2xl bg-background/60 shadow-sm transition-all ${
+        dragging ? "opacity-50 scale-[0.98]" : "hover:shadow-md"
+      } ${touchDragging ? "z-50 scale-[1.02] shadow-lg" : "z-auto"}`}
       draggable={!isMobile}
-      onDragStart={isMobile ? undefined : onDragStart}
-      onDragOver={isMobile ? undefined : onDragOver}
-      onDrop={isMobile ? undefined : onDrop}
-      onDragEnd={isMobile ? undefined : onDragEnd}
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      data-habit-id={habit.id}
     >
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 md:gap-3">
-        <div className="space-y-0.5">
-          <div className="flex items-center gap-2 flex-wrap">
-            <div className="text-base font-medium tracking-tight">{habit.name}</div>
-          </div>
-          {goalText ? <div className="text-xs text-muted-foreground">{goalText}</div> : null}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3">
+        <div className="flex flex-col flex-1 min-w-0">
+          <span className="font-semibold text-base truncate">{habit.name}</span>
+          {goalValue > 0 ? (
+            <span className="text-xs text-muted-foreground truncate">
+              Goal: {formatNumberWithDecimals(goalValue, dec)} {habit.unit || ""} / {goalPeriod}
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground truncate">{habit.unit || "No goal"}</span>
+          )}
         </div>
 
-        <div
-          className={`rounded-2xl bg-background/60 shadow-sm px-2 py-1.5 ${
-            isMobile
-              ? "grid grid-cols-[1fr,auto] items-center gap-2"
-              : "flex flex-row flex-wrap items-center justify-between gap-2 md:flex-nowrap"
-          }`}
-        >
+        <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 shrink-0">
+          
+          {/* --- PREMIUM INPUT CONTROLS --- */}
           {habit.type === "checkbox" ? (
-            <div
-              className={`rounded-2xl bg-background/60 shadow-sm px-3 py-1.5 transition-opacity transition-transform active:scale-[0.98] ${valueFlash ? "opacity-70" : ""} ${
+            <label
+              className={`cursor-pointer rounded-2xl bg-background/60 shadow-sm px-3 py-1.5 transition-opacity transition-transform active:scale-[0.98] ${valueFlash ? "opacity-70" : ""} ${
                 hasEntry ? "opacity-70 hover:opacity-90" : ""
-              } ${isMobile ? "flex items-center justify-between gap-2" : "flex items-center gap-2"}`}
+              } flex items-center gap-2`}
             >
               <Switch checked={Boolean(value)} onCheckedChange={handleCheckboxChange} />
-              <span className="text-sm">Done</span>
-            </div>
+              <span className="text-sm font-medium select-none">Done</span>
+            </label>
           ) : (
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center bg-background/60 md:bg-muted/30 shadow-sm border border-border/40 rounded-xl overflow-hidden">
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 px-0 rounded-xl transition-all active:scale-95 ${
-                  hasEntry ? "opacity-60 hover:opacity-80" : ""
+                className={`h-9 w-9 rounded-none border-r border-border/40 hover:bg-background/80 active:bg-muted ${
+                  hasEntry ? "opacity-60" : ""
                 } ${committing ? "pointer-events-none opacity-50" : ""}`}
                 onClick={() => bump(-1)}
               >
@@ -194,16 +151,16 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className={`w-[110px] text-center rounded-xl border-0 shadow-sm transition-colors transition-opacity ${
+                className={`w-[70px] h-9 text-center font-medium border-0 rounded-none shadow-none focus-visible:ring-0 ${
                   valueFlash ? "opacity-70" : "opacity-100"
-                } ${hasEntry ? "bg-muted/20 text-foreground" : "bg-background/60 text-foreground"} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                } ${hasEntry ? "bg-muted/10 text-foreground" : "bg-transparent text-foreground"} [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               />
 
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 px-0 rounded-xl transition-all active:scale-95 ${
-                  hasEntry ? "opacity-60 hover:opacity-80" : ""
+                className={`h-9 w-9 rounded-none border-l border-border/40 hover:bg-background/80 active:bg-muted ${
+                  hasEntry ? "opacity-60" : ""
                 } ${committing ? "pointer-events-none opacity-50" : ""}`}
                 onClick={() => bump(1)}
               >
@@ -211,6 +168,7 @@ export default function HabitLogRow({
               </Button>
             </div>
           )}
+          {/* ------------------------------ */}
 
           <div className="flex items-center justify-end gap-2">
             <div
