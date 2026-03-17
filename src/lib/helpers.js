@@ -171,3 +171,9 @@ export function buildYearOptions() {
 export function chartGradientId(prefix, habitId) {
   return `${prefix}_actual_${String(habitId || "none")}`;
 }
+
+export function addDaysISO(iso, days) {
+  const d = new Date(iso + "T12:00:00Z");
+  d.setDate(d.getDate() + days);
+  return isoFromDate(d);
+}

@@ -304,7 +304,7 @@ export default function HabitTrackerMVP() {
         </header>
 
         <Tabs defaultValue="log" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 rounded-2xl bg-muted/40 p-1.5 shadow-sm">
+          <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-2xl bg-muted/40/80 p-1.5 shadow-sm">
             <TabsTrigger
               value="log"
               className="rounded-xl text-sm transition-colors data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:border data-[state=active]:border-muted/40"
