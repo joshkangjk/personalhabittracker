@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3 } from "lucide-react";
+import { BarChart3, TrendingUp } from "lucide-react";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
 
 export default function DashboardTab({
@@ -21,54 +21,75 @@ export default function DashboardTab({
 }) {
   return (
     <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
-      <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
-        <CardHeader>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between gap-3">
-              <Select value={dashboardSummaryMode} onValueChange={setDashboardSummaryMode}>
-                <SelectTrigger className="w-auto h-auto px-0 py-0 border-0 shadow-none bg-transparent focus:ring-0 focus:ring-offset-0 rounded-none">
-                  <div className="text-base font-semibold tracking-tight">
-                    <SelectValue placeholder="Year Summary" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="year">Year Summary</SelectItem>
-                  <SelectItem value="month">Month Summary</SelectItem>
-                </SelectContent>
-              </Select>
-              {dashboardSummaryMode === "month" ? (
+      
+      {/* 1. SUMMARY CARD (Subdued, supporting role) */}
+      <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
+        <CardHeader className="pb-4">
+          <div className="flex flex-col gap-3">
+            
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Segmented Control / Pill Toggle */}
+              <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
+                <button
+                  onClick={() => setDashboardSummaryMode("year")}
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                    dashboardSummaryMode === "year"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "hover:text-foreground"
+                  }`}
+                >
+                  Yearly
+                </button>
+                <button
+                  onClick={() => setDashboardSummaryMode("month")}
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                    dashboardSummaryMode === "month"
+                      ? "bg-background text-foreground shadow-sm"
+                      : "hover:text-foreground"
+                  }`}
+                >
+                  Monthly
+                </button>
+              </div>
+
+              {/* Conditional Month Selector */}
+              {dashboardSummaryMode === "month" && (
                 <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
-                  <SelectTrigger className="w-[140px] rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30">
+                  <SelectTrigger className="h-9 w-[110px] rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all">
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="01">Jan</SelectItem>
-                    <SelectItem value="02">Feb</SelectItem>
-                    <SelectItem value="03">Mar</SelectItem>
-                    <SelectItem value="04">Apr</SelectItem>
-                    <SelectItem value="05">May</SelectItem>
-                    <SelectItem value="06">Jun</SelectItem>
-                    <SelectItem value="07">Jul</SelectItem>
-                    <SelectItem value="08">Aug</SelectItem>
-                    <SelectItem value="09">Sep</SelectItem>
-                    <SelectItem value="10">Oct</SelectItem>
-                    <SelectItem value="11">Nov</SelectItem>
-                    <SelectItem value="12">Dec</SelectItem>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="01" className="rounded-lg">Jan</SelectItem>
+                    <SelectItem value="02" className="rounded-lg">Feb</SelectItem>
+                    <SelectItem value="03" className="rounded-lg">Mar</SelectItem>
+                    <SelectItem value="04" className="rounded-lg">Apr</SelectItem>
+                    <SelectItem value="05" className="rounded-lg">May</SelectItem>
+                    <SelectItem value="06" className="rounded-lg">Jun</SelectItem>
+                    <SelectItem value="07" className="rounded-lg">Jul</SelectItem>
+                    <SelectItem value="08" className="rounded-lg">Aug</SelectItem>
+                    <SelectItem value="09" className="rounded-lg">Sep</SelectItem>
+                    <SelectItem value="10" className="rounded-lg">Oct</SelectItem>
+                    <SelectItem value="11" className="rounded-lg">Nov</SelectItem>
+                    <SelectItem value="12" className="rounded-lg">Dec</SelectItem>
                   </SelectContent>
                 </Select>
-              ) : (
-                <div />
               )}
             </div>
-            <p className="text-sm text-muted-foreground">Totals for {dashboardSummaryLabel}.</p>
+
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">
+                Leaderboard ({dashboardSummaryLabel})
+              </p>
+            </div>
+            
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-3 pt-0">
           {dashboardSummaryItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <BarChart3 className="h-10 w-10 mb-3 opacity-20" />
-              <div className="text-sm font-medium">Not enough data</div>
-              <div className="text-xs opacity-70">Log some habits to see your trends.</div>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
+              <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
+              <div className="text-sm font-medium">No habits logged yet</div>
+              <div className="text-xs opacity-70 mt-1">Check off some habits to see your summary.</div>
             </div>
           ) : (
             <YearSummaryList
@@ -81,35 +102,50 @@ export default function DashboardTab({
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold tracking-tight">Trend</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            {focusedHabit ? `Showing: ${focusedHabit.name} (${dashboardSummaryLabel})` : "Pick a habit"}
-          </p>
+      {/* 2. TREND CARD (Dominant, primary analytical tool) */}
+      <Card className="rounded-2xl bg-background/80 backdrop-blur-md shadow-md border border-primary/10 ring-1 ring-black/5 dark:ring-white/5 relative overflow-hidden">
+        {/* Optional decorative glow inside the trend card */}
+        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+        
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <TrendingUp className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold tracking-tight">Habit Trend</CardTitle>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
+              </p>
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-3">
+        
+        <CardContent className="space-y-4 pt-4">
           {focusedHabit ? (
-            <>
+            <div className="space-y-6">
               <HabitStatsGrid habit={focusedHabit} stats={focusedStats} mode={dashboardSummaryMode} />
-              <TrendChart
-                series={focusedSeries}
-                habit={focusedHabit}
-                year={selectedYear}
-                gradientPrefix="private"
-                emptyLabel={`No data yet for this habit in ${dashboardSummaryLabel}.`}
-              />
-              <div className="h-2" />
-            </>
+              
+              <div className="p-1 bg-background/50 rounded-xl border border-border/40 shadow-inner">
+                <TrendChart
+                  series={focusedSeries}
+                  habit={focusedHabit}
+                  year={selectedYear}
+                  gradientPrefix="private"
+                  emptyLabel={`No data yet for this habit in ${dashboardSummaryLabel}.`}
+                />
+              </div>
+            </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <BarChart3 className="h-10 w-10 mb-3 opacity-20" />
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
+              <TrendingUp className="h-8 w-8 mb-3 opacity-30" />
               <div className="text-sm font-medium">Not enough data</div>
-              <div className="text-xs opacity-70">Add a habit first to see your trends.</div>
+              <div className="text-xs opacity-70 mt-1">Add a habit first to visualize your progress.</div>
             </div>
           )}
         </CardContent>
       </Card>
+
     </div>
   );
 }
