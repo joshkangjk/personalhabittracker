@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarX, History } from "lucide-react";
+import { CalendarX } from "lucide-react";
 import HistoryDay from "./HistoryDay";
 import { formatPrettyDate } from "../lib/helpers";
 import { entryToDisplay } from "../lib/stats";
@@ -20,14 +20,10 @@ export default function HistoryTab({
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <History className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">Your past habits and progress.</p>
-            </div>
+          {/* Aligned with Dashboard formatting, icon removed */}
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
+            <p className="text-sm text-muted-foreground">Your past habits and progress.</p>
           </div>
 
           <div className="flex items-center">

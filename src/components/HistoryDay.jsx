@@ -25,7 +25,7 @@ export default function HistoryDay({
     .filter((x) => x.habit)
     .sort((a, b) => habits.findIndex((h) => h.id === a.hid) - habits.findIndex((h) => h.id === b.hid));
 
-  if (items.length === 0) return null; // Don't render empty days on the timeline
+  if (items.length === 0) return null; 
 
   return (
     <div className="flex gap-4 w-full">
@@ -39,7 +39,6 @@ export default function HistoryDay({
               : "bg-muted-foreground/40 hover:bg-muted-foreground"
           }`} 
         />
-        {/* Draw the connecting line only if it's not the very last item */}
         {!isLast && (
           <div className="w-px h-full bg-border/50 mt-2" />
         )}
@@ -66,11 +65,12 @@ export default function HistoryDay({
               }
             }}
           >
-            <div>
-              <div className={`text-sm sm:text-base tracking-tight transition-colors ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground group-hover:text-foreground"}`}>
+            <div className="space-y-0.5">
+              {/* Standardized to text-base font-semibold to match Daily Log */}
+              <div className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
                 {formatPrettyDate(dateISO)}
               </div>
-              <div className={`text-xs mt-0.5 transition-colors ${expanded ? "text-primary/80 font-medium" : "text-muted-foreground"}`}>
+              <div className="text-sm font-medium text-muted-foreground transition-colors">
                 {items.length} completed habit{items.length === 1 ? "" : "s"}
               </div>
             </div>
@@ -92,17 +92,16 @@ export default function HistoryDay({
                   <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl bg-background/50 hover:bg-background shadow-sm border border-transparent hover:border-border/50 px-3 py-2.5 transition-all">
                     
                     <div className="flex items-center gap-3">
-                      {/* Tiny sub-bullet for each habit */}
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                       <div>
-                        <div className="text-sm font-medium">{habit.name}</div>
+                        {/* Standardized font-semibold to match Daily Log */}
+                        <div className="text-sm font-semibold">{habit.name}</div>
                         <div className="text-xs text-muted-foreground font-mono bg-muted/30 inline-flex px-1.5 py-0.5 rounded mt-0.5">
                           {entryToDisplay(habit, entry)}
                         </div>
                       </div>
                     </div>
 
-                    {/* Subtle Delete Icon Button (Fades in on hover) */}
                     <Button
                       variant="ghost"
                       size="icon"
