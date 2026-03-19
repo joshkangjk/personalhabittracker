@@ -6,6 +6,20 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      keyframes: {
+        'success-bounce': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.15)' },
+        },
+        'success-flash': {
+          '0%, 100%': { backgroundColor: 'transparent' },
+          '50%': { backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }, // Soft success green
+        }
+      },
+      animation: {
+        'success-bounce': 'success-bounce 0.3s ease-in-out',
+        'success-flash': 'success-flash 0.5s ease-out',
+      },
       fontFamily: {
         sans: [
           'Inter',
