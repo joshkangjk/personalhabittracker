@@ -260,14 +260,9 @@ export default function PublicView({ token }) {
           {/* 3. HISTORY TIMELINE CARD */}
           <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
             <CardHeader className="pb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <History className="h-4 w-4 text-primary" />
-                </div>
-                <div>
-                  <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
-                  <p className="text-sm text-muted-foreground mt-0.5">Last 30 days of activity.</p>
-                </div>
+              <div className="space-y-1">
+                <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
+                <p className="text-sm text-muted-foreground">Last 30 days of activity.</p>
               </div>
             </CardHeader>
             <CardContent className="pt-2">
@@ -330,11 +325,11 @@ export default function PublicView({ token }) {
                                 }
                               }}
                             >
-                              <div>
-                                <div className={`text-sm sm:text-base tracking-tight transition-colors ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground group-hover:text-foreground"}`}>
+                              <div className="space-y-0.5">
+                                <div className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
                                   {formatPrettyDate(d)}
                                 </div>
-                                <div className={`text-xs mt-0.5 transition-colors ${expanded ? "text-primary/80 font-medium" : "text-muted-foreground"}`}>
+                                <div className="text-sm font-medium text-muted-foreground transition-colors">
                                   {items.length} completed habit{items.length === 1 ? "" : "s"}
                                 </div>
                               </div>
@@ -350,7 +345,7 @@ export default function PublicView({ token }) {
                                   <div key={it.id} className="flex items-center justify-between gap-3 rounded-xl bg-background/50 shadow-sm border border-transparent px-3 py-2.5">
                                     <div className="flex items-center gap-3">
                                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
-                                      <div className="text-sm font-medium">{it.label}</div>
+                                      <div className="text-sm font-semibold">{it.label}</div>
                                     </div>
                                     <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded">
                                       {it.value}
