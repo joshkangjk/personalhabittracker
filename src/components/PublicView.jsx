@@ -283,7 +283,7 @@ export default function PublicView({ token }) {
                       })
                       .filter(Boolean);
                     
-                    if (items.length === 0) return null; // Skip empty days in the timeline
+                    if (items.length === 0) return null; 
                     
                     const expanded = !!expandedDates[d];
                     const isLast = index === recentDates.length - 1;
@@ -347,7 +347,8 @@ export default function PublicView({ token }) {
                                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                                       <div className="text-sm font-semibold">{it.label}</div>
                                     </div>
-                                    <div className="text-xs text-muted-foreground font-mono bg-muted/30 px-2 py-0.5 rounded">
+                                    {/* Standardized font-medium and tabular-nums applied here too */}
+                                    <div className="text-sm font-medium tabular-nums text-foreground/90 mt-0.5">
                                       {it.value}
                                     </div>
                                   </div>

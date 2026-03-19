@@ -20,7 +20,6 @@ export default function HistoryTab({
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
-          {/* Aligned with Dashboard formatting, icon removed */}
           <div className="space-y-1">
             <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
             <p className="text-sm text-muted-foreground">Your past habits and progress.</p>

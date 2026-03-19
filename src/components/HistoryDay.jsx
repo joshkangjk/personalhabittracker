@@ -66,7 +66,6 @@ export default function HistoryDay({
             }}
           >
             <div className="space-y-0.5">
-              {/* Standardized to text-base font-semibold to match Daily Log */}
               <div className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
                 {formatPrettyDate(dateISO)}
               </div>
@@ -94,9 +93,8 @@ export default function HistoryDay({
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                       <div>
-                        {/* Standardized font-semibold to match Daily Log */}
                         <div className="text-sm font-semibold">{habit.name}</div>
-                        <div className="text-xs text-muted-foreground font-mono bg-muted/30 inline-flex px-1.5 py-0.5 rounded mt-0.5">
+                        <div className="text-sm font-medium tabular-nums text-muted-foreground mt-0.5">
                           {entryToDisplay(habit, entry)}
                         </div>
                       </div>
