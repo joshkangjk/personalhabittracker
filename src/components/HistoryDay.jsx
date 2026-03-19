@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown } from "lucide-react";
 
 export default function HistoryDay({
   dateISO,
@@ -11,6 +11,7 @@ export default function HistoryDay({
   onDeleteOne,
   formatPrettyDate,
   entryToDisplay,
+  isLast
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState(null);
@@ -24,76 +25,119 @@ export default function HistoryDay({
     .filter((x) => x.habit)
     .sort((a, b) => habits.findIndex((h) => h.id === a.hid) - habits.findIndex((h) => h.id === b.hid));
 
+  if (items.length === 0) return null; // Don't render empty days on the timeline
+
   return (
-    <div className="rounded-2xl bg-background/60 shadow-sm p-3">
-      <div
-        className={`flex items-center justify-between gap-2 cursor-pointer select-none rounded-xl px-2 py-1 transition-colors ${expanded ? "bg-muted/40" : "hover:bg-muted/30"}`}
-        onClick={() => setExpanded((v) => !v)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setExpanded((v) => !v);
-          }
-        }}
-      >
-        <div className={`text-sm tracking-tight ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
-          {formatPrettyDate(dateISO)}
-        </div>
-        <div className={`text-xs transition-colors ${expanded ? "text-foreground/70" : "text-muted-foreground"}`}>
-          {items.length} item{items.length === 1 ? "" : "s"}
-        </div>
+    <div className="flex gap-4 w-full">
+      
+      {/* 1. TIMELINE SPINE */}
+      <div className="flex flex-col items-center relative z-10 w-4 shrink-0">
+        <div 
+          className={`mt-4 h-2.5 w-2.5 rounded-full border-2 border-background shadow-sm transition-all duration-300 ${
+            expanded 
+              ? "bg-primary ring-4 ring-primary/20 scale-110" 
+              : "bg-muted-foreground/40 hover:bg-muted-foreground"
+          }`} 
+        />
+        {/* Draw the connecting line only if it's not the very last item */}
+        {!isLast && (
+          <div className="w-px h-full bg-border/50 mt-2" />
+        )}
       </div>
 
-      {/* --- SMOOTH EXPANDING WRAPPER --- */}
-      <div 
-        className={`grid transition-all duration-300 ease-in-out ${
-          expanded ? "grid-rows-[1fr] opacity-100 mt-3" : "grid-rows-[0fr] opacity-0"
-        }`}
-      >
-        <div className="overflow-hidden">
-          <div className="grid gap-2">
-            {items.map(({ hid, habit, entry }) => (
-              <div key={hid} className="flex items-start justify-between gap-3 rounded-2xl bg-background/60 shadow-sm px-3 py-2">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{habit.name}</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">{entryToDisplay(habit, entry)}</div>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  className="h-9 px-3 gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPendingDelete({ hid, name: habit.name });
-                    setConfirmOpen(true);
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Remove
-                </Button>
+      {/* 2. TIMELINE CONTENT CARD */}
+      <div className="flex-1 pb-6">
+        <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+          expanded 
+            ? "bg-background/80 shadow-md border-border/60 backdrop-blur-md" 
+            : "bg-background/40 shadow-sm border-border/20 hover:border-border/40 hover:bg-background/60"
+        }`}>
+          
+          {/* Header (Clickable) */}
+          <div
+            className="flex items-center justify-between p-3 sm:p-4 cursor-pointer select-none group"
+            onClick={() => setExpanded((v) => !v)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                setExpanded((v) => !v);
+              }
+            }}
+          >
+            <div>
+              <div className={`text-sm sm:text-base tracking-tight transition-colors ${expanded ? "font-semibold text-foreground" : "font-medium text-foreground group-hover:text-foreground"}`}>
+                {formatPrettyDate(dateISO)}
               </div>
-            ))}
+              <div className={`text-xs mt-0.5 transition-colors ${expanded ? "text-primary/80 font-medium" : "text-muted-foreground"}`}>
+                {items.length} completed habit{items.length === 1 ? "" : "s"}
+              </div>
+            </div>
+            
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${expanded ? "bg-primary/10 text-primary rotate-180" : "bg-transparent text-muted-foreground"}`}>
+              <ChevronDown className="h-4 w-4" />
+            </div>
+          </div>
+
+          {/* Expanded Content Grid */}
+          <div 
+            className={`grid transition-all duration-300 ease-in-out ${
+              expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+            }`}
+          >
+            <div className="overflow-hidden">
+              <div className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-2 pt-1 border-t border-border/40">
+                {items.map(({ hid, habit, entry }) => (
+                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl bg-background/50 hover:bg-background shadow-sm border border-transparent hover:border-border/50 px-3 py-2.5 transition-all">
+                    
+                    <div className="flex items-center gap-3">
+                      {/* Tiny sub-bullet for each habit */}
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
+                      <div>
+                        <div className="text-sm font-medium">{habit.name}</div>
+                        <div className="text-xs text-muted-foreground font-mono bg-muted/30 inline-flex px-1.5 py-0.5 rounded mt-0.5">
+                          {entryToDisplay(habit, entry)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Subtle Delete Icon Button (Fades in on hover) */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 sm:group-hover/item:opacity-100 transition-opacity focus:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPendingDelete({ hid, name: habit.name });
+                        setConfirmOpen(true);
+                      }}
+                      title="Remove entry"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      {/* -------------------------------- */}
-
+      
+      {/* 3. DELETE CONFIRMATION DIALOG */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle>Remove entry?</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground">
-            This will remove the log for <span className="font-medium text-foreground">{pendingDelete?.name || "this habit"}</span> on{" "}
-            <span className="font-medium text-foreground">{formatPrettyDate(dateISO)}</span>.
+          <div className="text-sm text-muted-foreground mt-1">
+            This will remove the log for <span className="font-semibold text-foreground">{pendingDelete?.name || "this habit"}</span> on{" "}
+            <span className="font-semibold text-foreground">{formatPrettyDate(dateISO)}</span>.
           </div>
-          <div className="flex justify-end gap-2 pt-2">
+          <div className="flex justify-end gap-3 pt-4">
             <Button
-              variant="secondary"
+              variant="ghost"
+              className="rounded-full"
               onClick={() => {
                 setConfirmOpen(false);
                 setPendingDelete(null);
@@ -103,18 +147,20 @@ export default function HistoryDay({
             </Button>
             <Button
               type="button"
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
+              className="rounded-full shadow-sm"
               onClick={() => {
                 if (pendingDelete?.hid) onDeleteOne(pendingDelete.hid);
                 setConfirmOpen(false);
                 setPendingDelete(null);
               }}
             >
-              Remove
+              Remove Log
             </Button>
           </div>
         </DialogContent>
       </Dialog>
+      
     </div>
   );
 }
