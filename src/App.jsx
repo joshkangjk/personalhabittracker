@@ -223,15 +223,14 @@ export default function HabitTrackerMVP() {
   if (!session) return <LoginScreen />;
 
   return (
-    // Removed the inline background classes so your CSS body background shows through
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
       <div className="relative mx-auto max-w-6xl p-4 md:p-6 space-y-4 z-10">
+        
         <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40">
           
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">Habit Tracker</h1>
             
-            {/* Quieter Sync Status */}
             <div className="hidden md:flex items-center">
               {cloudError ? (
                 <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
@@ -252,17 +251,16 @@ export default function HabitTrackerMVP() {
             </div>
           </div>
 
-          {/* Desktop controls */}
+          {/* Desktop Controls */}
           <div className="hidden md:flex items-center gap-2">
             <YearPicker value={selectedYear} onChange={handleYearChange} options={yearOptions} />
 
-            <div className="h-6 w-px bg-border/50 mx-1" /> {/* Subtle Divider */}
+            <div className="h-6 w-px bg-border/50 mx-1" />
 
             <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-4" disabled={shareBusy}>
               {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
             </Button>
             
-            {/* Reduced to Icon Buttons for a cleaner look */}
             <Button onClick={exportJSON} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground" title="Export Data">
               <Download className="h-[1.1rem] w-[1.1rem]" />
             </Button>
@@ -274,40 +272,43 @@ export default function HabitTrackerMVP() {
             <ShareStatus shareError={shareError} shareOk={shareOk} />
           </div>
 
-          {/* Mobile controls */}
+          {/* Mobile 3-Dot Menu */}
           <div className="md:hidden absolute top-0 right-0 p-3">
             <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 px-0" aria-label="More">
-                  <MoreVertical className="h-4 w-4" />
+                <Button variant="ghost" className="h-9 w-9 px-0 rounded-full" aria-label="More">
+                  <MoreVertical className="h-5 w-5 text-muted-foreground" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md">
+              <DialogContent className="max-w-md rounded-2xl">
                 <DialogHeader>
-                  <DialogTitle>Menu</DialogTitle>
+                  <DialogTitle className="text-left font-semibold tracking-tight">Menu</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid gap-4">
+                <div className="grid gap-4 mt-2">
                   <YearPicker
                     value={selectedYear}
                     onChange={handleYearChange}
                     options={yearOptions}
-                    triggerClassName="rounded-2xl bg-background/60 shadow-sm border-0 focus:ring-2 focus:ring-muted/30"
-                    labelClassName="text-sm text-muted-foreground"
+                    triggerClassName="rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20"
+                    labelClassName="text-sm font-medium text-muted-foreground"
                   />
 
+                  {/* Restyled mobile buttons to match desktop aesthetic */}
                   <div className="grid gap-2">
-                    <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
+                    <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full justify-center" disabled={shareBusy}>
                       {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share link
                     </Button>
 
                     <ShareStatus shareError={shareError} shareOk={shareOk} />
 
-                    <Button onClick={handleMobileExport} variant="secondary" className="gap-2">
-                      <Download className="h-4 w-4" /> Export
+                    <div className="h-px bg-border/50 my-1" />
+
+                    <Button onClick={handleMobileExport} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-foreground">
+                      <Download className="h-4 w-4" /> Export Data
                     </Button>
-                    <Button variant="ghost" onClick={handleMobileSignOut} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                      Sign out
+                    <Button onClick={handleMobileSignOut} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                      <LogOut className="h-4 w-4" /> Sign out
                     </Button>
                   </div>
                 </div>
