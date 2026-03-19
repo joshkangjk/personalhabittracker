@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, MoreVertical, Link as LinkIcon, Loader2 } from "lucide-react";
+import { Download, MoreVertical, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
 import PublicView from "./components/PublicView";
@@ -223,46 +223,59 @@ export default function HabitTrackerMVP() {
   if (!session) return <LoginScreen />;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/15 text-foreground text-[15px] font-sans antialiased">
-      <div className="mx-auto max-w-6xl p-4 md:p-6 space-y-4">
-        <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-3 py-3 shadow-sm">
-          <div className="space-y-1">
-            <h1 className="text-2xl md:text-3xl font-semibold tracking-tight">Habit Tracker</h1>
-            <div
-              className={
-                "inline-flex items-center rounded-full px-2.5 py-1 text-xs shadow-sm bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 " +
-                (cloudError
-                  ? "bg-destructive/10 text-destructive"
-                  : cloudReady
-                    ? "bg-muted/30 text-foreground"
-                    : "bg-muted/30 text-muted-foreground")
-              }
-            >
-              {cloudError ? `Cloud error: ${cloudError}` : cloudReady ? "Synced" : "Loading cloud..."}
+    // Removed the inline background classes so your CSS body background shows through
+    <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
+      <div className="relative mx-auto max-w-6xl p-4 md:p-6 space-y-4 z-10">
+        <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40">
+          
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Habit Tracker</h1>
+            
+            {/* Quieter Sync Status */}
+            <div className="hidden md:flex items-center">
+              {cloudError ? (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  Error
+                </span>
+              ) : cloudReady ? (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" title="Synced to cloud">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70" />
+                  Synced
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Syncing
+                </span>
+              )}
             </div>
           </div>
 
           {/* Desktop controls */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2">
             <YearPicker value={selectedYear} onChange={handleYearChange} options={yearOptions} />
 
-            <div className="flex items-center gap-2">
-              <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2" disabled={shareBusy}>
-                {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
-              </Button>
-              <Button onClick={exportJSON} variant="secondary" className="gap-2">
-                <Download className="h-4 w-4" /> Export
-              </Button>
-              <Button variant="ghost" onClick={handleSignOut}>
-                Sign out
-              </Button>
-            </div>
+            <div className="h-6 w-px bg-border/50 mx-1" /> {/* Subtle Divider */}
+
+            <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-4" disabled={shareBusy}>
+              {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
+            </Button>
+            
+            {/* Reduced to Icon Buttons for a cleaner look */}
+            <Button onClick={exportJSON} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground" title="Export Data">
+              <Download className="h-[1.1rem] w-[1.1rem]" />
+            </Button>
+            
+            <Button onClick={handleSignOut} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-destructive" title="Sign out">
+              <LogOut className="h-[1.1rem] w-[1.1rem]" />
+            </Button>
 
             <ShareStatus shareError={shareError} shareOk={shareOk} />
           </div>
 
           {/* Mobile controls */}
-          <div className="md:hidden absolute top-0 right-0">
+          <div className="md:hidden absolute top-0 right-0 p-3">
             <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" className="h-9 w-9 px-0" aria-label="More">
@@ -293,7 +306,7 @@ export default function HabitTrackerMVP() {
                     <Button onClick={handleMobileExport} variant="secondary" className="gap-2">
                       <Download className="h-4 w-4" /> Export
                     </Button>
-                    <Button variant="ghost" onClick={handleMobileSignOut}>
+                    <Button variant="ghost" onClick={handleMobileSignOut} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
                       Sign out
                     </Button>
                   </div>
@@ -307,19 +320,19 @@ export default function HabitTrackerMVP() {
           <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-full bg-muted/50 p-1 shadow-inner">
             <TabsTrigger
               value="log"
-              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Daily Log
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Dashboard
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="rounded-full text-sm transition-all data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               History
             </TabsTrigger>
