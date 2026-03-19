@@ -2,7 +2,7 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { BarChart3, TrendingUp } from "lucide-react";
+import { BarChart3 } from "lucide-react";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
 
 export default function DashboardTab({
@@ -108,16 +108,11 @@ export default function DashboardTab({
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
         
         <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <TrendingUp className="h-4 w-4 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-semibold tracking-tight">Habit Trend</CardTitle>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
-              </p>
-            </div>
+          <div className="space-y-1">
+            <CardTitle className="text-lg font-semibold tracking-tight">Habit Trend</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
+            </p>
           </div>
         </CardHeader>
         
@@ -138,7 +133,7 @@ export default function DashboardTab({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-              <TrendingUp className="h-8 w-8 mb-3 opacity-30" />
+              <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
               <div className="text-sm font-medium">Not enough data</div>
               <div className="text-xs opacity-70 mt-1">Add a habit first to visualize your progress.</div>
             </div>

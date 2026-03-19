@@ -1,3 +1,4 @@
+// src/components/DashboardWidgets.jsx
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -102,9 +103,9 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
   const title = labelFormatter ? labelFormatter(label) : String(label ?? "");
 
   return (
-    <div className="pointer-events-none max-w-[220px] rounded-2xl bg-background/70 backdrop-blur supports-[backdrop-filter]:bg-background/60 shadow-sm px-3 py-2">
-      <div className="text-xs font-medium text-foreground/90">{title}</div>
-      <div className="mt-1 space-y-1">
+    <div className="pointer-events-none max-w-[220px] rounded-2xl bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 shadow-md border border-border/40 px-3 py-2">
+      <div className="text-xs font-medium text-muted-foreground mb-1.5">{title}</div>
+      <div className="space-y-1.5">
         {[...payload]
           .filter((p) => p && p.value !== null && p.value !== undefined)
           .reduce((acc, p) => {
@@ -127,17 +128,18 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
             const labelText = Array.isArray(res) ? res[1] : String(name);
 
             return (
-              <div key={String(name)} className="flex items-center justify-between gap-4 text-xs">
-                <div className="flex items-center gap-2 text-muted-foreground">
+              <div key={String(name)} className="flex items-center justify-between gap-6 text-sm">
+                <div className="flex items-center gap-2">
                   {(() => {
                     const labelKey = String(labelText || "").toLowerCase();
                     const rawKey = String(p.dataKey || p.name || "").toLowerCase();
 
+                    // Theme colors for tooltip dots
                     const forced =
                       labelKey === "goal" || rawKey.includes("goal")
-                        ? "#ef4444"
+                        ? "hsl(var(--muted-foreground))"
                         : labelKey === "actual" || rawKey.includes("actual")
-                          ? "#3b82f6"
+                          ? "hsl(var(--primary))"
                           : null;
 
                     const dotColor = forced || p.color || p.stroke || "currentColor";
@@ -147,7 +149,7 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
                         aria-hidden="true"
                         style={{
                           color: dotColor,
-                          fontSize: 12,
+                          fontSize: 10,
                           lineHeight: 1,
                           flex: "0 0 auto",
                         }}
@@ -156,9 +158,9 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
                       </span>
                     );
                   })()}
-                  <span>{labelText}</span>
+                  <span className="font-medium text-foreground">{labelText}</span>
                 </div>
-                <span className="tabular-nums text-foreground">{valueText}</span>
+                <span className="tabular-nums font-semibold text-foreground">{valueText}</span>
               </div>
             );
           })}
@@ -204,7 +206,7 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
   if (!habit) return null;
 
   return (
-    <div className="h-[260px] min-h-[260px] w-full rounded-2xl bg-background/60 backdrop-blur shadow-sm p-2">
+    <div className="h-[260px] min-h-[260px] w-full rounded-2xl p-2">
       {!(series || []).length ? (
         <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
           {emptyLabel || `No data yet for this habit in ${year}.`}
@@ -214,23 +216,23 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
           <LineChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={chartGradientId(gradientPrefix, habit?.id)} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="currentColor" stopOpacity={0.16} />
-                <stop offset="100%" stopColor="currentColor" stopOpacity={0.02} />
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.12} vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis
               dataKey="date"
-              tick={{ fontSize: 12, fontFamily: "inherit" }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               tickFormatter={formatAxisDate}
               interval="preserveStartEnd"
               minTickGap={60}
-              tickMargin={8}
+              tickMargin={12}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fontSize: 12, fontFamily: "inherit" }}
+              tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
               axisLine={false}
               tickLine={false}
               padding={{ top: 12, bottom: 12 }}
@@ -240,10 +242,12 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
               content={<GlassTooltip />}
               labelFormatter={(l) => formatPrettyDate(l)}
               formatter={makeTrendTooltipFormatter(habit, habitDecimals, formatNumberWithDecimals)}
+              cursor={{ stroke: "hsl(var(--border))", strokeWidth: 1, strokeDasharray: "4 4" }}
             />
             {isCurrentYear(year) ? (
-              <ReferenceLine x={todayISO()} stroke="currentColor" strokeOpacity={0.18} strokeDasharray="2 6" />
+              <ReferenceLine x={todayISO()} stroke="hsl(var(--primary))" strokeOpacity={0.2} strokeDasharray="4 4" />
             ) : null}
+            
             <Area
               type="monotone"
               dataKey="actualCum"
@@ -251,16 +255,26 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
               fill={`url(#${chartGradientId(gradientPrefix, habit?.id)})`}
               isAnimationActive
             />
-            <Line type="monotone" dataKey="actualCum" dot={false} activeDot={{ r: 4 }} strokeWidth={2} isAnimationActive />
+            
+            <Line 
+              type="monotone" 
+              dataKey="actualCum" 
+              dot={false} 
+              activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} 
+              strokeWidth={2.5} 
+              stroke="hsl(var(--primary))" 
+              isAnimationActive 
+            />
+            
             {getYearlyGoal(habit) > 0 ? (
               <Line
                 type="monotone"
                 dataKey="goalCum"
                 dot={false}
-                strokeWidth={1.75}
-                strokeDasharray="6 6"
-                stroke="#ef4444"
-                strokeOpacity={0.65}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+                stroke="hsl(var(--muted-foreground))"
+                strokeOpacity={0.4}
               />
             ) : null}
           </LineChart>
