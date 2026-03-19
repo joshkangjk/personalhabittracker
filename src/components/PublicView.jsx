@@ -200,7 +200,7 @@ export default function PublicView({ token }) {
 
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-muted-foreground">
-                      Leaderboard ({dashboardSummaryLabel})
+                      Summary ({dashboardSummaryLabel})
                     </p>
                   </div>
                 </div>
