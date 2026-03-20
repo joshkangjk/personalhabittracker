@@ -43,14 +43,14 @@ export default function LoginScreen() {
         }}
       >
         <div className="space-y-1">
-          <div className="text-base font-semibold tracking-tight">Sign in</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-[17px] font-semibold tracking-tight">Sign in</div>
+          <div className="text-[13px] text-muted-foreground">
             {sent ? "Check your email for the login link." : "Enter your email to get a magic link."}
           </div>
         </div>
 
         <div className="space-y-2">
-          <div className="text-xs text-muted-foreground">Email</div>
+          <div className="text-[13px] text-muted-foreground">Email</div>
           <Input
             type="email"
             inputMode="email"
@@ -62,7 +62,7 @@ export default function LoginScreen() {
               if (errorMsg) setErrorMsg("");
               if (sent) setSent(false);
             }}
-            className="rounded-2xl bg-background/60 shadow-sm border-0 focus-visible:ring-2 focus-visible:ring-muted/30"
+            className="text-[15px] rounded-2xl bg-background/60 shadow-sm border-0 focus-visible:ring-2 focus-visible:ring-muted/30"
           />
         </div>
 
@@ -88,11 +88,11 @@ export default function LoginScreen() {
         </Button>
 
         {errorMsg ? (
-          <div className="text-sm text-destructive">{errorMsg}</div>
+          <div className="text-[13px] text-destructive">{errorMsg}</div>
         ) : null}
 
         {sent ? (
-          <div className="text-xs text-muted-foreground">
+          <div className="text-[13px] text-muted-foreground">
             You can close this page after opening the link from your email.
           </div>
         ) : null}

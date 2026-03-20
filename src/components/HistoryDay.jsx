@@ -66,10 +66,10 @@ export default function HistoryDay({
             }}
           >
             <div className="space-y-0.5">
-              <div className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
+              <div className="text-[15px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
                 {formatPrettyDate(dateISO)}
               </div>
-              <div className="text-sm font-medium text-muted-foreground transition-colors">
+              <div className="text-[13px] text-muted-foreground transition-colors">
                 {items.length} completed habit{items.length === 1 ? "" : "s"}
               </div>
             </div>
@@ -93,8 +93,8 @@ export default function HistoryDay({
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                       <div>
-                        <div className="text-sm font-semibold">{habit.name}</div>
-                        <div className="text-sm font-medium tabular-nums text-muted-foreground mt-0.5">
+                        <div className="text-[13px] font-semibold">{habit.name}</div>
+                        <div className="text-[13px] font-medium tabular-nums text-muted-foreground mt-0.5">
                           {entryToDisplay(habit, entry)}
                         </div>
                       </div>
@@ -127,7 +127,7 @@ export default function HistoryDay({
           <DialogHeader>
             <DialogTitle>Remove entry?</DialogTitle>
           </DialogHeader>
-          <div className="text-sm text-muted-foreground mt-1">
+          <div className="text-[13px]text-muted-foreground mt-1">
             This will remove the log for <span className="font-semibold text-foreground">{pendingDelete?.name || "this habit"}</span> on{" "}
             <span className="font-semibold text-foreground">{formatPrettyDate(dateISO)}</span>.
           </div>

@@ -21,8 +21,8 @@ export default function HistoryTab({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
           <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
-            <p className="text-sm text-muted-foreground">Your past habits and progress.</p>
+            <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
+            <p className="text-[13px] text-muted-foreground">Your past habits and progress.</p>
           </div>
 
           <div className="flex items-center">
@@ -55,8 +55,8 @@ export default function HistoryTab({
         {filteredHistory.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
             <CalendarX className="h-8 w-8 mb-3 opacity-30" />
-            <div className="text-sm font-medium">No history yet</div>
-            <div className="text-xs opacity-70 mt-1">Your past logs will appear here.</div>
+            <div className="text-[13px] font-medium">No history yet</div>
+            <div className="text-[13px] opacity-70 mt-1">Your past logs will appear here.</div>
           </div>
         ) : (
           <div className="relative mt-2">

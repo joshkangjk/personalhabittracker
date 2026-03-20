@@ -113,7 +113,7 @@ export default function PublicView({ token }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm font-medium text-muted-foreground">
+      <div className="min-h-screen flex items-center justify-center text-[13px] font-medium text-muted-foreground">
         Loading shared tracker...
       </div>
     );
@@ -121,7 +121,7 @@ export default function PublicView({ token }) {
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-sm font-medium text-destructive bg-destructive/5">
+      <div className="min-h-screen flex items-center justify-center text-[13px] font-medium text-destructive bg-destructive/5">
         {error}
       </div>
     );
@@ -134,9 +134,9 @@ export default function PublicView({ token }) {
         {/* PREMIUM HEADER */}
         <header className="relative flex flex-col sm:flex-row sm:items-center justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40 gap-4">
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Habit Tracker</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
           </div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full border border-border/50">
+          <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full border border-border/50">
             <Lock className="h-3.5 w-3.5" />
             Public View
           </div>
@@ -154,7 +154,7 @@ export default function PublicView({ token }) {
                     <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
                       <button
                         onClick={() => setDashboardSummaryMode("year")}
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
                           dashboardSummaryMode === "year"
                             ? "bg-background text-foreground shadow-sm"
                             : "hover:text-foreground"
@@ -164,7 +164,7 @@ export default function PublicView({ token }) {
                       </button>
                       <button
                         onClick={() => setDashboardSummaryMode("month")}
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
                           dashboardSummaryMode === "month"
                             ? "bg-background text-foreground shadow-sm"
                             : "hover:text-foreground"
@@ -199,7 +199,7 @@ export default function PublicView({ token }) {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-muted-foreground">
+                    <p className="text-[13px] font-medium text-muted-foreground">
                       Summary ({dashboardSummaryLabel})
                     </p>
                   </div>
@@ -209,7 +209,7 @@ export default function PublicView({ token }) {
                 {dashboardSummaryItems.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
                     <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-                    <div className="text-sm font-medium">No habits to show</div>
+                    <div className="text-[13px] font-medium">No habits to show</div>
                   </div>
                 ) : (
                   <YearSummaryList
@@ -227,8 +227,8 @@ export default function PublicView({ token }) {
               <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
               <CardHeader className="pb-2">
                 <div className="space-y-1">
-                  <CardTitle className="text-lg font-semibold tracking-tight">Habit Trend</CardTitle>
-                  <p className="text-sm text-muted-foreground">
+                  <CardTitle className="text-[17px] font-semibold tracking-tight">Habit Trend</CardTitle>
+                  <p className="text-[13px] text-muted-foreground">
                     {focusedHabit ? `Analyzing ${focusedHabit.name}` : "No habit selected"}
                   </p>
                 </div>
@@ -250,7 +250,7 @@ export default function PublicView({ token }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
                     <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-                    <div className="text-sm font-medium">Not enough data</div>
+                    <div className="text-[13px] font-medium">Not enough data</div>
                   </div>
                 )}
               </CardContent>
@@ -261,15 +261,15 @@ export default function PublicView({ token }) {
           <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
             <CardHeader className="pb-4">
               <div className="space-y-1">
-                <CardTitle className="text-lg font-semibold tracking-tight">Activity Log</CardTitle>
-                <p className="text-sm text-muted-foreground">Last 30 days of activity.</p>
+                <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
+                <p className="text-[13px] text-muted-foreground">Last 30 days of activity.</p>
               </div>
             </CardHeader>
             <CardContent className="pt-2">
               {recentDates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
                   <History className="h-8 w-8 mb-3 opacity-30" />
-                  <div className="text-sm font-medium">No recent logs</div>
+                  <div className="text-[13px] font-medium">No recent logs</div>
                 </div>
               ) : (
                 <div className="relative mt-2">
@@ -326,10 +326,10 @@ export default function PublicView({ token }) {
                               }}
                             >
                               <div className="space-y-0.5">
-                                <div className="text-base font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
+                                <div className="text-[15px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
                                   {formatPrettyDate(d)}
                                 </div>
-                                <div className="text-sm font-medium text-muted-foreground transition-colors">
+                                <div className="text-[13px] font-medium text-muted-foreground transition-colors">
                                   {items.length} completed habit{items.length === 1 ? "" : "s"}
                                 </div>
                               </div>
@@ -345,10 +345,10 @@ export default function PublicView({ token }) {
                                   <div key={it.id} className="flex items-center justify-between gap-3 rounded-xl bg-background/50 shadow-sm border border-transparent px-3 py-2.5">
                                     <div className="flex items-center gap-3">
                                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
-                                      <div className="text-sm font-semibold">{it.label}</div>
+                                      <div className="text-[13px] font-semibold">{it.label}</div>
                                     </div>
                                     {/* Standardized font-medium and tabular-nums applied here too */}
-                                    <div className="text-sm font-medium tabular-nums text-foreground/90 mt-0.5">
+                                    <div className="text-[13px] font-medium tabular-nums text-foreground/90 mt-0.5">
                                       {it.value}
                                     </div>
                                   </div>

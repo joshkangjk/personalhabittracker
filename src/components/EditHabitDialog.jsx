@@ -56,26 +56,26 @@ function save() {
           {habit.type === "number" ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Name</Label>
-                <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
+                <Label className="text-[13px] text-muted-foreground">Name</Label>
+                <Input className="h-11 text-[15px]" value={name} onChange={(e) => setName(e.target.value)} />
               </div>
               <div className="grid gap-1.5">
-                <Label className="text-xs text-muted-foreground">Unit</Label>
-                <Input className="h-11 text-base" value={unit} onChange={(e) => setUnit(e.target.value)} />
+                <Label className="text-[13px] text-muted-foreground">Unit</Label>
+                <Input className="h-11 text-[15px]" value={unit} onChange={(e) => setUnit(e.target.value)} />
               </div>
             </div>
           ) : (
             <div className="grid gap-1.5">
-              <Label className="text-xs text-muted-foreground">Name</Label>
-              <Input className="h-11 text-base" value={name} onChange={(e) => setName(e.target.value)} />
+              <Label className="text-[13px] text-muted-foreground">Name</Label>
+              <Input className="h-11 text-[15px]" value={name} onChange={(e) => setName(e.target.value)} />
             </div>
           )}
 
           <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs text-muted-foreground">Goal</Label>
+              <Label className="text-[13px] text-muted-foreground">Goal</Label>
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
+                <span className="text-[13px] text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
                 <Switch
                   checked={goalEnabled}
                   onCheckedChange={(v) => {
@@ -89,9 +89,9 @@ function save() {
             {goalEnabled ? (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Period</Label>
+                  <Label className="text-[13px] text-muted-foreground">Period</Label>
                   <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                    <SelectTrigger className="h-11 text-base">
+                    <SelectTrigger className="h-11 text-[15px]">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -104,10 +104,10 @@ function save() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <Label className="text-xs text-muted-foreground">Goal</Label>
+                  <Label className="text-[13px] text-muted-foreground">Goal</Label>
                   <Input
                     type="number"
-                    className="h-11 text-base [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    className="h-11 text-[15px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     value={goalValue}
                     onChange={(e) => setGoalValue(e.target.value)}
                   />
@@ -120,7 +120,7 @@ function save() {
             <Button
               type="button"
               variant="ghost"
-              className="h-9 px-2 text-sm text-destructive/80 hover:text-destructive hover:bg-destructive/10"
+              className="h-9 px-2 text-[13px] text-destructive/80 hover:text-destructive hover:bg-destructive/10"
               onClick={() => setConfirmOpen(true)}
             >
               Delete habit
@@ -140,7 +140,7 @@ function save() {
             <DialogHeader>
               <DialogTitle>Delete habit?</DialogTitle>
             </DialogHeader>
-            <div className="text-sm text-muted-foreground">
+            <div className="text-[15px] text-muted-foreground">
               This will delete <span className="font-medium text-foreground">{habit.name}</span> and all its logs. This cannot be undone.
             </div>
             <div className="flex justify-end gap-2 pt-2">

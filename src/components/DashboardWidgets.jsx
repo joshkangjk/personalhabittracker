@@ -65,10 +65,10 @@ export function formatRequired(habit, v) {
 export function MiniStat({ label, value }) {
   return (
     <div className="rounded-2xl bg-background/60 backdrop-blur shadow-sm p-3">
-      <div className="text-xs text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="text-[13px] text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
         {label}
       </div>
-      <div className="mt-1 text-lg font-semibold tabular-nums tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
+      <div className="mt-1 text-[17px] font-semibold tabular-nums tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
         {value || ""}
       </div>
     </div>
@@ -104,7 +104,7 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
 
   return (
     <div className="pointer-events-none max-w-[220px] rounded-2xl bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 shadow-md border border-border/40 px-3 py-2">
-      <div className="text-xs font-medium text-muted-foreground mb-1.5">{title}</div>
+      <div className="text-[13px] font-medium text-muted-foreground mb-1.5">{title}</div>
       <div className="space-y-1.5">
         {[...payload]
           .filter((p) => p && p.value !== null && p.value !== undefined)
@@ -128,7 +128,7 @@ export function GlassTooltip({ active, label, payload, formatter, labelFormatter
             const labelText = Array.isArray(res) ? res[1] : String(name);
 
             return (
-              <div key={String(name)} className="flex items-center justify-between gap-6 text-sm">
+              <div key={String(name)} className="flex items-center justify-between gap-6 text-[13px]">
                 <div className="flex items-center gap-2">
                   {(() => {
                     const labelKey = String(labelText || "").toLowerCase();
@@ -208,7 +208,7 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
   return (
     <div className="h-[260px] min-h-[260px] w-full rounded-2xl p-2">
       {!(series || []).length ? (
-        <div className="h-full rounded-2xl flex items-center justify-center text-sm text-muted-foreground">
+        <div className="h-full rounded-2xl flex items-center justify-center text-[15px] text-muted-foreground">
           {emptyLabel || `No data yet for this habit in ${year}.`}
         </div>
       ) : (
@@ -286,7 +286,7 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
 
 export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = "year" }) {
   if (!items || items.length === 0) {
-    return <div className="text-sm text-muted-foreground">No habits yet.</div>;
+    return <div className="text-[15px] text-muted-foreground">No habits yet.</div>;
   }
 
   const labelFor = (stats) => {
@@ -312,11 +312,11 @@ export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = 
             <div className="flex items-center gap-2">
               <span className="font-medium">{habit.name}</span>
             </div>
-            <div className="text-sm">
+            <div className="text-[15px]">
               <span className="font-semibold">{formatStatTotal(habit, stats.total)}</span>
             </div>
           </div>
-          <div className="mt-1.5 text-xs text-muted-foreground">
+          <div className="mt-1.5 text-[13px] text-muted-foreground">
             <span className="font-medium text-foreground">{labelFor(stats)}</span>
           </div>
         </button>
@@ -328,7 +328,7 @@ export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = 
 export function YearPicker({ value, onChange, options, triggerClassName, labelClassName }) {
   return (
     <div className="flex items-center gap-2">
-      <Label className={labelClassName || "text-xs text-muted-foreground"}>Year</Label>
+      <Label className={labelClassName || "text-[13px] text-muted-foreground"}>Year</Label>
       <Select value={String(value)} onValueChange={onChange}>
         <SelectTrigger
           className={
@@ -353,9 +353,9 @@ export function YearPicker({ value, onChange, options, triggerClassName, labelCl
 export function ShareStatus({ shareError, shareOk }) {
   return (
     <>
-      {shareError ? <div className="text-xs text-destructive">{shareError}</div> : null}
+      {shareError ? <div className="text-[13px] text-destructive">{shareError}</div> : null}
       {shareOk ? (
-        <div className="text-xs text-muted-foreground inline-flex items-center gap-1">
+        <div className="text-[13px] text-muted-foreground inline-flex items-center gap-1">
           <CheckCircle2 className="h-3.5 w-3.5" /> Copied
         </div>
       ) : null}
