@@ -37,7 +37,6 @@ export default function DailyLogTab({
           <div className="flex items-center justify-between w-full sm:w-auto">
             <div className="space-y-1">
               <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
-              <p className="text-[13px] text-muted-foreground">Track your habits for today.</p>
             </div>
             
             {/* Mobile 'Add Habit' button */}
