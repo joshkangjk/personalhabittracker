@@ -64,7 +64,7 @@ export function formatRequired(habit, v) {
 // --- Components ---
 export function MiniStat({ label, value }) {
   return (
-    <div className="rounded-2xl bg-background/60 backdrop-blur shadow-sm p-4 md:p-5">
+    <div className="rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 p-4 md:p-5">
       <div className="text-[13px] text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
         {label}
       </div>
@@ -304,7 +304,7 @@ export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = 
         <button
           key={habit.id}
           onClick={() => onSelectHabit?.(habit.id)}
-          className={`w-full text-left rounded-2xl bg-background/60 backdrop-blur shadow-sm p-4 hover:bg-accent/20 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+          className={`w-full text-left rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 p-4 hover:shadow-apple-hover hover:bg-background/80 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
             selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/10" : ""
           }`}
         >

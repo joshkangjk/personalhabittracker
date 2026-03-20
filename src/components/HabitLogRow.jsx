@@ -111,8 +111,8 @@ export default function HabitLogRow({
   return (
     <div
       // ADDED: Conditional animate-success-flash class on the row wrapper
-      className={`group rounded-2xl bg-background/60 shadow-sm transition-all duration-200 ease-in-out ${
-        dragging ? "opacity-50 scale-[0.98]" : "hover:shadow-md"
+      className={`group rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 transition-all duration-200 ease-in-out ${
+        dragging ? "opacity-50 scale-[0.98]" : "hover:shadow-apple-hover hover:border-border/40 hover:bg-background/80"
       } ${touchDragging ? "z-50 scale-[1.02] shadow-lg" : "z-auto"} ${
         valueFlash ? "animate-success-flash ring-1 ring-green-500/50" : ""
       }`}

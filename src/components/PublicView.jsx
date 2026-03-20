@@ -132,7 +132,7 @@ export default function PublicView({ token }) {
       <div className="relative mx-auto max-w-6xl p-4 md:p-6 space-y-4 md:space-y-6 z-10">
         
         {/* PREMIUM HEADER */}
-        <header className="relative flex flex-col sm:flex-row sm:items-center justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40 gap-4">
+        <header className="relative flex flex-col sm:flex-row sm:items-center justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20 gap-4">
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
           </div>

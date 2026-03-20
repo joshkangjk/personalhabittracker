@@ -6,6 +6,10 @@ export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
+      boxShadow: {
+        'apple': '0 4px 20px rgba(0, 0, 0, 0.05)',
+        'apple-hover': '0 8px 30px rgba(0, 0, 0, 0.08)',
+      },
       keyframes: {
         'success-bounce': {
           '0%, 100%': { transform: 'scale(1)' },

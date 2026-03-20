@@ -226,7 +226,7 @@ export default function HabitTrackerMVP() {
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
       <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        <header className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-6 py-4 shadow-sm border border-border/40">
+        <header className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20">
           
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
