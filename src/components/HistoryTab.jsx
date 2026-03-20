@@ -22,7 +22,6 @@ export default function HistoryTab({
           
           <div className="space-y-1">
             <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
-            <p className="text-[13px] text-muted-foreground">Your past habits and progress.</p>
           </div>
 
           <div className="flex items-center">
