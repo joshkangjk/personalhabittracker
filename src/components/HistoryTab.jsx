@@ -16,7 +16,7 @@ export default function HistoryTab({
   removeLog
 }) {
   return (
-    <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
+    <Card>
       <CardHeader className="pb-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           

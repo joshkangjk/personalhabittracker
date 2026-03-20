@@ -28,7 +28,7 @@ export default function DailyLogTab({
   getHabitDnDProps
 }) {
   return (
-    <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm transition-shadow hover:shadow-md">
+    <Card className="transition-shadow hover:shadow-apple-hover">
       
       <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-6">
         

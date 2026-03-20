@@ -23,7 +23,7 @@ export default function DashboardTab({
     <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
       
       {/* 1. SUMMARY CARD (Subdued, supporting role) */}
-      <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
+      <Card>
         <CardHeader className="pb-6">
           <div className="flex flex-col gap-3">
             
@@ -103,7 +103,7 @@ export default function DashboardTab({
       </Card>
 
       {/* 2. TREND CARD (Dominant, primary analytical tool) */}
-      <Card className="rounded-2xl bg-background/80 backdrop-blur-md shadow-md border border-primary/10 ring-1 ring-black/5 dark:ring-white/5 relative overflow-hidden">
+      <Card className="border-primary/10 relative overflow-hidden">
         {/* Optional decorative glow inside the trend card */}
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
         

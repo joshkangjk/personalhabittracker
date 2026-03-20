@@ -144,9 +144,9 @@ export default function PublicView({ token }) {
 
         <div className="grid gap-4 lg:gap-6">
           <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
-            
+            Card className="rounded-2xl bg-background/80 backdrop-blur-md shadow-md border border-primary/10
             {/* 1. SUMMARY CARD (Subdued) */}
-            <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
+            <Card>
               <CardHeader className="pb-4">
                 <div className="flex flex-col gap-3">
                   <div className="flex flex-wrap items-center gap-3">
@@ -223,7 +223,7 @@ export default function PublicView({ token }) {
             </Card>
 
             {/* 2. TREND CARD (Dominant) */}
-            <Card className="rounded-2xl bg-background/80 backdrop-blur-md shadow-md border border-primary/10 ring-1 ring-black/5 dark:ring-white/5 relative overflow-hidden">
+            <Card className="border-primary/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
               <CardHeader className="pb-2">
                 <div className="space-y-1">
@@ -258,7 +258,7 @@ export default function PublicView({ token }) {
           </div>
 
           {/* 3. HISTORY TIMELINE CARD */}
-          <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
+          <Card>
             <CardHeader className="pb-4">
               <div className="space-y-1">
                 <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
