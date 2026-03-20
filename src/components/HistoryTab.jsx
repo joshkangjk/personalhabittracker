@@ -17,20 +17,24 @@ export default function HistoryTab({
 }) {
   return (
     <Card>
-      <CardHeader className="pb-4">
+      <CardHeader className="pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
-          <div className="space-y-1">
-            <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
+          {/* Left Side: Titles */}
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="space-y-1">
+              <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
+            </div>
           </div>
 
-          <div className="flex items-center">
+          {/* Right Side: Month Selector */}
+          <div className="flex items-center w-full sm:w-auto">
             <Select value={historyMonth} onValueChange={setHistoryMonth}>
-              <SelectTrigger className="h-9 w-[130px] rounded-full bg-background/80 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all">
+              <SelectTrigger className="h-11 sm:h-9 w-full sm:w-[130px] rounded-full sm:rounded-2xl bg-background/80 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all text-[15px] sm:text-[13px]">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
-                <SelectItem value="all" className="rounded-lg">All Time</SelectItem>
+                <SelectItem value="all" className="rounded-lg text-[15px]">All Time</SelectItem>
                 <SelectItem value="01" className="rounded-lg">Jan</SelectItem>
                 <SelectItem value="02" className="rounded-lg">Feb</SelectItem>
                 <SelectItem value="03" className="rounded-lg">Mar</SelectItem>

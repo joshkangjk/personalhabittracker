@@ -30,54 +30,60 @@ export default function DailyLogTab({
   return (
     <Card className="transition-shadow hover:shadow-apple-hover">
       
-      <CardHeader className="flex flex-col sm:flex-row sm:items-center md:justify-between gap-4">
-        
-        {/* Mobile Top Row / Desktop Left Side */}
-        <div className="flex items-center justify-between w-full md:w-auto space-y-1">
-          <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
-          {/* Mobile 'Add Habit' button */}
-          <div className="md:hidden block">
-            <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
-          </div>
-        </div>
-
-        {/* Mobile Bottom Row / Desktop Right Side */}
-        <div className="flex items-center w-full md:w-auto">
+      <CardHeader className="pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
-          {/* iOS-STYLE FULL-WIDTH DATE PICKER PILL */}
-          <div className="flex items-center justify-between w-full md:w-auto bg-muted/40 shadow-sm md:shadow-none border border-border/40 md:border-0 rounded-2xl p-1 md:gap-1">
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
-              onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, -1) } })}
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+          {/* Left Side: Titles & Mobile Add Button */}
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="space-y-1">
+              <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
+              <p className="text-[13px] text-muted-foreground">Track your habits for today.</p>
+            </div>
             
-            {/* The w-full here allows it to flex perfectly on mobile while capping out on desktop */}
-            <Input
-              type="date"
-              value={activeDate}
-              onChange={handleActiveDateChange}
-              className="w-full md:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
-            />
-
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
-              onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, 1) } })}
-              disabled={activeDate >= todayISO()} 
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+            {/* Mobile 'Add Habit' button */}
+            <div className="sm:hidden block">
+              <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
+            </div>
           </div>
 
-          {/* Desktop 'Add Habit' button */}
-          <div className="hidden md:block ml-4">
-            <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
+          {/* Right Side: Date Picker & Desktop Add Button */}
+          <div className="flex items-center w-full sm:w-auto gap-4">
+            
+            {/* iOS-STYLE FULL-WIDTH DATE PICKER PILL */}
+            <div className="flex items-center justify-between w-full sm:w-auto bg-muted/40 shadow-sm sm:shadow-none border border-border/40 sm:border-0 rounded-2xl p-1 sm:gap-1">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
+                onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, -1) } })}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <Input
+                type="date"
+                value={activeDate}
+                onChange={handleActiveDateChange}
+                className="w-full sm:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-[15px] text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
+              />
+
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
+                onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, 1) } })}
+                disabled={activeDate >= todayISO()} 
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* Desktop 'Add Habit' button */}
+            <div className="hidden sm:block">
+              <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
+            </div>
           </div>
+          
         </div>
       </CardHeader>
 
