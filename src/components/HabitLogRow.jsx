@@ -125,13 +125,13 @@ export default function HabitLogRow({
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3">
         <div className="flex flex-col flex-1 min-w-0 px-1">
-          <span className={`font-semibold text-base truncate transition-colors duration-200 ${valueFlash ? "text-green-600 dark:text-green-400" : ""}`}>{habit.name}</span>
+          <span className={`font-medium text-[15px] truncate transition-colors duration-200 ${valueFlash ? "text-green-600 dark:text-green-400" : ""}`}>{habit.name}</span>
           {goalValue > 0 ? (
-            <span className="text-xs text-muted-foreground truncate mt-0.5">
+            <span className="text-[13px] text-muted-foreground truncate mt-0.5">
               Goal: {formatNumberWithDecimals(goalValue, dec)} {habit.unit || ""} / {goalPeriod}
             </span>
           ) : (
-            <span className="text-xs text-muted-foreground truncate mt-0.5">{habit.unit || "No goal"}</span>
+            <span className="text-[13px] text-muted-foreground truncate mt-0.5">{habit.unit || "No goal"}</span>
           )}
         </div>
 
@@ -146,7 +146,7 @@ export default function HabitLogRow({
               } ${valueFlash ? "animate-success-bounce" : ""} flex items-center gap-2.5`}
             >
               <Switch checked={Boolean(value)} onCheckedChange={handleCheckboxChange} className={valueFlash ? "data-[state=checked]:bg-green-500" : ""} />
-              <span className={`text-sm font-medium select-none ${value ? "text-primary" : "text-muted-foreground"}`}>{value ? "Done" : "Mark"}</span>
+              <span className={`text-[13px] font-medium select-none ${value ? "text-primary" : "text-muted-foreground"}`}>{value ? "Done" : "Mark"}</span>
             </label>
           ) : (
             <div 

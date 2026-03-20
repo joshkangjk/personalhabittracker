@@ -32,7 +32,7 @@ export default function DashboardTab({
               <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
                 <button
                   onClick={() => setDashboardSummaryMode("year")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[15px] font-medium transition-all duration-200 ${
                     dashboardSummaryMode === "year"
                       ? "bg-background text-foreground shadow-sm"
                       : "hover:text-foreground"
@@ -42,7 +42,7 @@ export default function DashboardTab({
                 </button>
                 <button
                   onClick={() => setDashboardSummaryMode("month")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-sm font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[15px] font-medium transition-all duration-200 ${
                     dashboardSummaryMode === "month"
                       ? "bg-background text-foreground shadow-sm"
                       : "hover:text-foreground"
@@ -77,7 +77,7 @@ export default function DashboardTab({
             </div>
 
             <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">
+              <p className="text-[13px] font-medium text-muted-foreground">
                 Summary ({dashboardSummaryLabel})
               </p>
             </div>
@@ -88,8 +88,8 @@ export default function DashboardTab({
           {dashboardSummaryItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
               <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-              <div className="text-sm font-medium">No habits logged yet</div>
-              <div className="text-xs opacity-70 mt-1">Check off some habits to see your summary.</div>
+              <div className="text-[15px] font-medium">No habits logged yet</div>
+              <div className="text-[13px] opacity-70 mt-1">Check off some habits to see your summary.</div>
             </div>
           ) : (
             <YearSummaryList
@@ -109,8 +109,8 @@ export default function DashboardTab({
         
         <CardHeader className="pb-2">
           <div className="space-y-1">
-            <CardTitle className="text-lg font-semibold tracking-tight">Habit Trend</CardTitle>
-            <p className="text-sm text-muted-foreground">
+            <CardTitle className="text-[17px] font-semibold tracking-tight">Habit Trend</CardTitle>
+            <p className="text-[13px] text-muted-foreground">
               {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
             </p>
           </div>
@@ -134,8 +134,8 @@ export default function DashboardTab({
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
               <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-              <div className="text-sm font-medium">Not enough data</div>
-              <div className="text-xs opacity-70 mt-1">Add a habit first to visualize your progress.</div>
+              <div className="text-[15px] font-medium">Not enough data</div>
+              <div className="text-[13px] opacity-70 mt-1">Add a habit first to visualize your progress.</div>
             </div>
           )}
         </CardContent>

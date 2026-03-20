@@ -87,22 +87,8 @@ body {
     @apply bg-background text-foreground leading-relaxed tracking-normal; 
   }
 
-  /* 1. Large Bold Headings */
-  h1, h2, h3 {
-    @apply font-semibold tracking-tight text-foreground;
-  }
-  
-  /* 2. Standard Body / Medium Weight Labels */
-  p, label {
-    @apply text-[15px] font-normal text-foreground/90;
-  }
-
-  strong, b {
-    @apply font-medium;
-  }
-
-  /* 3. Light Secondary Text (Gray) */
-  small, .text-muted, .text-sm {
-    @apply text-[13px] font-normal text-muted-foreground tracking-wide;
+  /* 1. Ensure headings have tight tracking */
+  h1, h2, h3, .tracking-tight {
+    @apply tracking-tight;
   }
 }

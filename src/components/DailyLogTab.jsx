@@ -34,7 +34,7 @@ export default function DailyLogTab({
         
         {/* Mobile Top Row / Desktop Left Side */}
         <div className="flex items-center justify-between w-full md:w-auto">
-          <CardTitle className="text-base font-semibold tracking-tight">Daily Log</CardTitle>
+          <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
           {/* Mobile 'Add Habit' button */}
           <div className="md:hidden block">
             <AddHabitDialog onAdd={addHabit} uuid={uuid} clampNumber={clampNumber} />
@@ -86,8 +86,8 @@ export default function DailyLogTab({
           {habits.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
               <ListX className="h-10 w-10 mb-3 opacity-20" />
-              <div className="text-sm font-medium">No habits yet</div>
-              <div className="text-xs opacity-70">Click 'Add Habit' to get started.</div>
+              <div className="text-[15px] font-medium">No habits yet</div>
+              <div className="text-[13px] opacity-70">Click 'Add Habit' to get started.</div>
             </div>
           ) : (
             habits.map((h) => (

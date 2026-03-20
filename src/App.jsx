@@ -229,21 +229,21 @@ export default function HabitTrackerMVP() {
         <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40">
           
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold tracking-tight">Habit Tracker</h1>
+            <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
             
             <div className="hidden md:flex items-center">
               {cloudError ? (
-                <span className="flex items-center gap-1.5 text-xs font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
                   <AlertCircle className="h-3.5 w-3.5" />
                   Error
                 </span>
               ) : cloudReady ? (
-                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground" title="Synced to cloud">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground" title="Synced to cloud">
                   <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70" />
                   Synced
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   Syncing
                 </span>
@@ -291,7 +291,7 @@ export default function HabitTrackerMVP() {
                     onChange={handleYearChange}
                     options={yearOptions}
                     triggerClassName="rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20"
-                    labelClassName="text-sm font-medium text-muted-foreground"
+                    labelClassName="text-[13px] font-medium text-muted-foreground"
                   />
 
                   {/* Restyled mobile buttons to match desktop aesthetic */}
@@ -321,19 +321,19 @@ export default function HabitTrackerMVP() {
           <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-full bg-muted/50 p-1 shadow-inner">
             <TabsTrigger
               value="log"
-              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Daily Log
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               Dashboard
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="rounded-full text-sm transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
             >
               History
             </TabsTrigger>
