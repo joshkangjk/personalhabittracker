@@ -64,12 +64,13 @@ export function formatRequired(habit, v) {
 // --- Components ---
 export function MiniStat({ label, value }) {
   return (
-    <div className="rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 p-4 md:p-5">
-      <div className="text-[13px] text-muted-foreground whitespace-nowrap overflow-hidden text-ellipsis">
+    <div className="flex flex-col">
+      <div className="text-[13px] text-muted-foreground font-medium whitespace-nowrap">
         {label}
       </div>
-      <div className="mt-1 text-[17px] font-semibold tabular-nums tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
-        {value || ""}
+      {/* We removed the aggressive truncation and dropped to 15px so long numbers like "1,000 miles" can fit or wrap naturally */}
+      <div className="mt-0.5 text-[15px] font-semibold tabular-nums tracking-tight text-foreground/90">
+        {value || "—"}
       </div>
     </div>
   );
@@ -185,7 +186,8 @@ export function HabitStatsGrid({ habit, stats, mode }) {
   const daysLoggedText = stats ? `${Math.round(stats.daysLogged || 0)} days` : "";
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    // We moved the "box" to the grid container itself, rather than individual items!
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-border/40 p-5">
       <MiniStat label="Total" value={stats ? formatStatTotal(habit, stats.total) : ""} />
       <MiniStat label="Goal" value={goalText} />
       <MiniStat label="On track" value={onTrackText} />
