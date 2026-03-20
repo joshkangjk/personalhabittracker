@@ -88,7 +88,7 @@ body {
   }
 
   /* 1. Ensure headings have tight tracking */
-  h1, h2, h3, .tracking-tight {
+  h1, h2, h3 {
     @apply tracking-tight;
   }
 }
