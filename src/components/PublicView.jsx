@@ -144,7 +144,6 @@ export default function PublicView({ token }) {
 
         <div className="grid gap-4 lg:gap-6">
           <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
-            Card className="rounded-2xl bg-background/80 backdrop-blur-md shadow-md border border-primary/10
             {/* 1. SUMMARY CARD (Subdued) */}
             <Card>
               <CardHeader className="pb-4">

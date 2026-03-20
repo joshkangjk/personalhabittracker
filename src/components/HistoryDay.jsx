@@ -127,7 +127,7 @@ export default function HistoryDay({
           <DialogHeader>
             <DialogTitle>Remove entry?</DialogTitle>
           </DialogHeader>
-          <div className="text-[13px]text-muted-foreground mt-1">
+          <div className="text-[13px] text-muted-foreground mt-1">
             This will remove the log for <span className="font-semibold text-foreground">{pendingDelete?.name || "this habit"}</span> on{" "}
             <span className="font-semibold text-foreground">{formatPrettyDate(dateISO)}</span>.
           </div>
