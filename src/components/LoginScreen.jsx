@@ -36,7 +36,7 @@ export default function LoginScreen() {
   return (
     <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/15 text-foreground flex items-center justify-center p-6 font-sans antialiased">
       <form
-        className="w-full max-w-sm rounded-3xl bg-background/60 backdrop-blur shadow-sm p-5 space-y-4"
+        className="w-full max-w-sm rounded-3xl bg-background/60 backdrop-blur shadow-sm p-6 md:p-8 space-y-6 md:space-y-8"
         onSubmit={(e) => {
           e.preventDefault();
           sendLink();

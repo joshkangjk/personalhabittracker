@@ -224,9 +224,9 @@ export default function HabitTrackerMVP() {
 
   return (
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
-      <div className="relative mx-auto max-w-6xl p-4 md:p-6 space-y-4 z-10">
+      <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        <header className="relative flex flex-col gap-3 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-4 py-3 shadow-sm border border-border/40">
+        <header className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/50 rounded-2xl px-6 py-4 shadow-sm border border-border/40">
           
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
@@ -339,7 +339,7 @@ export default function HabitTrackerMVP() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="log" className="space-y-4">
+          <TabsContent value="log" className="space-y-6 mt-6">
             <DailyLogTab
               habits={state.habits}
               entries={state.entries}
@@ -352,7 +352,7 @@ export default function HabitTrackerMVP() {
             />
           </TabsContent>
 
-          <TabsContent value="dashboard" className="space-y-4">
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
             <DashboardTab
               dashboardSummaryMode={dashboardSummaryMode}
               setDashboardSummaryMode={setDashboardSummaryMode}
@@ -369,7 +369,7 @@ export default function HabitTrackerMVP() {
             />
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4">
+          <TabsContent value="history" className="space-y-6 mt-6">
             <HistoryTab
               historyMonth={historyMonth}
               setHistoryMonth={setHistoryMonth}

@@ -54,7 +54,7 @@ export default function HistoryDay({
           
           {/* Header (Clickable) */}
           <div
-            className="flex items-center justify-between p-3 sm:p-4 cursor-pointer select-none group"
+            className="flex items-center justify-between p-4 sm:p-6 cursor-pointer select-none group"
             onClick={() => setExpanded((v) => !v)}
             role="button"
             tabIndex={0}
@@ -86,9 +86,9 @@ export default function HistoryDay({
             }`}
           >
             <div className="overflow-hidden">
-              <div className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-2 pt-1 border-t border-border/40">
+              <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-3 pt-2 border-t border-border/40">
                 {items.map(({ hid, habit, entry }) => (
-                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl bg-background/50 hover:bg-background shadow-sm border border-transparent hover:border-border/50 px-3 py-2.5 transition-all">
+                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl bg-background/50 hover:bg-background shadow-sm border border-transparent hover:border-border/50 px-4 py-3 transition-all">
                     
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />

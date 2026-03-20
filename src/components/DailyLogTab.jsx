@@ -30,7 +30,7 @@ export default function DailyLogTab({
   return (
     <Card className="rounded-2xl bg-background/60 backdrop-blur shadow-sm transition-shadow hover:shadow-md">
       
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-4">
+      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-6">
         
         {/* Mobile Top Row / Desktop Left Side */}
         <div className="flex items-center justify-between w-full md:w-auto">
@@ -81,7 +81,7 @@ export default function DailyLogTab({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3">
+      <CardContent className="space-y-4">
         <div className="grid gap-3">
           {habits.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">

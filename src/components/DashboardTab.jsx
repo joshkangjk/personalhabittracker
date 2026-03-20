@@ -20,11 +20,11 @@ export default function DashboardTab({
   selectedYear
 }) {
   return (
-    <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+    <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
       
       {/* 1. SUMMARY CARD (Subdued, supporting role) */}
       <Card className="rounded-2xl bg-background/40 backdrop-blur shadow-sm border-0">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-6">
           <div className="flex flex-col gap-3">
             
             <div className="flex flex-wrap items-center gap-3">
@@ -84,7 +84,7 @@ export default function DashboardTab({
             
           </div>
         </CardHeader>
-        <CardContent className="space-y-3 pt-0">
+        <CardContent className="space-y-4 pt-0">
           {dashboardSummaryItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
               <BarChart3 className="h-8 w-8 mb-3 opacity-30" />

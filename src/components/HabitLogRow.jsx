@@ -123,7 +123,7 @@ export default function HabitLogRow({
       onDragEnd={onDragEnd}
       data-habit-id={habit.id}
     >
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-5">
         <div className="flex flex-col flex-1 min-w-0 px-1">
           <span className={`font-medium text-[15px] truncate transition-colors duration-200 ${valueFlash ? "text-green-600 dark:text-green-400" : ""}`}>{habit.name}</span>
           {goalValue > 0 ? (
