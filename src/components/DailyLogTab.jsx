@@ -30,10 +30,10 @@ export default function DailyLogTab({
   return (
     <Card className="transition-shadow hover:shadow-apple-hover">
       
-      <CardHeader className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 pb-6">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center md:justify-between gap-4">
         
         {/* Mobile Top Row / Desktop Left Side */}
-        <div className="flex items-center justify-between w-full md:w-auto">
+        <div className="flex items-center justify-between w-full md:w-auto space-y-1">
           <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
           {/* Mobile 'Add Habit' button */}
           <div className="md:hidden block">
