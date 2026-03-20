@@ -32,7 +32,7 @@ export default function DashboardTab({
               <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
                 <button
                   onClick={() => setDashboardSummaryMode("year")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[15px] font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
                     dashboardSummaryMode === "year"
                       ? "bg-background text-foreground shadow-sm"
                       : "hover:text-foreground"
@@ -42,7 +42,7 @@ export default function DashboardTab({
                 </button>
                 <button
                   onClick={() => setDashboardSummaryMode("month")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[15px] font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
                     dashboardSummaryMode === "month"
                       ? "bg-background text-foreground shadow-sm"
                       : "hover:text-foreground"

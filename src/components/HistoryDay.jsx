@@ -93,7 +93,7 @@ export default function HistoryDay({
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                       <div>
-                        <div className="text-[13px] font-semibold">{habit.name}</div>
+                        <div className="text-[15px] font-medium text-foreground">{habit.name}</div>
                         <div className="text-[13px] font-medium tabular-nums text-muted-foreground mt-0.5">
                           {entryToDisplay(habit, entry)}
                         </div>
