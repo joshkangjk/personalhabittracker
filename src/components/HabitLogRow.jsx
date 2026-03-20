@@ -111,7 +111,7 @@ export default function HabitLogRow({
   return (
     <div
       // ADDED: Conditional animate-success-flash class on the row wrapper
-      className={`group rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 transition-all duration-200 ease-in-out ${
+      className={`group rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple transition-all duration-200 ease-in-out ${
         dragging ? "opacity-50 scale-[0.98]" : "hover:shadow-apple-hover hover:border-border/40 hover:bg-background/80"
       } ${touchDragging ? "z-50 scale-[1.02] shadow-lg" : "z-auto"} ${
         valueFlash ? "animate-success-flash ring-1 ring-green-500/50" : ""
@@ -128,7 +128,7 @@ export default function HabitLogRow({
           <span className={`font-medium text-[15px] truncate transition-colors duration-200 ${valueFlash ? "text-green-600 dark:text-green-400" : ""}`}>{habit.name}</span>
           {goalValue > 0 ? (
             <span className="text-[13px] text-muted-foreground truncate mt-0.5">
-              Goal: {formatNumberWithDecimals(goalValue, dec)} {habit.unit || ""} / {goalPeriod}
+              {formatNumberWithDecimals(goalValue, dec)} {habit.unit || ""} / {goalPeriod}
             </span>
           ) : (
             <span className="text-[13px] text-muted-foreground truncate mt-0.5">{habit.unit || "No goal"}</span>
@@ -141,7 +141,7 @@ export default function HabitLogRow({
           {habit.type === "checkbox" ? (
             <label
               // ADDED: Conditional animate-success-bounce class
-              className={`cursor-pointer rounded-xl bg-background/80 shadow-sm border border-border/40 px-3 py-2 transition-all duration-200 hover:bg-muted/50 active:scale-[0.98] ${
+              className={`cursor-pointer rounded-xl bg-muted/40 px-3 py-2 transition-all duration-200 hover:bg-muted/50 active:scale-[0.98] ${
                 hasEntry && value ? "opacity-100 bg-primary/5 border-primary/20" : "opacity-80 hover:opacity-100"
               } ${valueFlash ? "animate-success-bounce" : ""} flex items-center gap-2.5`}
             >
@@ -151,14 +151,14 @@ export default function HabitLogRow({
           ) : (
             <div 
                // ADDED: Conditional animate-success-bounce class
-               className={`flex items-center bg-background/80 shadow-sm border border-border/40 rounded-xl overflow-hidden transition-all duration-200 ${
+               className={`flex items-center bg-muted/40 rounded-xl overflow-hidden transition-all duration-200 ${
                  valueFlash ? "animate-success-bounce border-green-500/50" : ""
                }`}
             >
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 rounded-none border-r border-border/40 hover:bg-muted/50 active:bg-muted ${
+                className={`h-9 w-9 rounded-none hover:bg-muted/50 active:bg-muted ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(-1)}
@@ -181,7 +181,7 @@ export default function HabitLogRow({
               <Button
                 type="button"
                 variant="ghost"
-                className={`h-9 w-9 rounded-none border-l border-border/40 hover:bg-muted/50 active:bg-muted ${
+                className={`h-9 w-9 rounded-none hover:bg-muted/50 active:bg-muted ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(1)}

@@ -49,7 +49,7 @@ export default function DailyLogTab({
           <div className="flex items-center w-full sm:w-auto gap-4">
             
             {/* iOS-STYLE FULL-WIDTH DATE PICKER PILL */}
-            <div className="flex items-center justify-between w-full sm:w-auto bg-muted/40 shadow-sm sm:shadow-none border border-border/40 sm:border-0 rounded-2xl p-1 sm:gap-1">
+            <div className="flex items-center justify-between w-full sm:w-auto bg-muted/40 rounded-2xl p-1 sm:gap-1">
               <Button 
                 variant="ghost" 
                 size="icon" 

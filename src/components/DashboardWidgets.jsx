@@ -187,7 +187,7 @@ export function HabitStatsGrid({ habit, stats, mode }) {
 
   return (
     // We moved the "box" to the grid container itself, rather than individual items!
-    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-border/40 p-5">
+    <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-6 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] p-5">
       <MiniStat label="Total" value={stats ? formatStatTotal(habit, stats.total) : ""} />
       <MiniStat label="Goal" value={goalText} />
       <MiniStat label="On track" value={onTrackText} />
@@ -306,7 +306,7 @@ export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = 
         <button
           key={habit.id}
           onClick={() => onSelectHabit?.(habit.id)}
-          className={`w-full text-left rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple border border-border/20 p-4 hover:shadow-apple-hover hover:bg-background/80 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+          className={`w-full text-left rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple p-4 hover:shadow-apple-hover hover:bg-background/80 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
             selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/10" : ""
           }`}
         >
