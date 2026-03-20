@@ -30,7 +30,7 @@ export default function HistoryTab({
           {/* Right Side: Month Selector */}
           <div className="flex items-center w-full sm:w-auto">
             <Select value={historyMonth} onValueChange={setHistoryMonth}>
-              <SelectTrigger className="h-11 sm:h-9 w-full sm:w-[130px] rounded-full sm:rounded-2xl bg-background/80 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all text-[15px] sm:text-[13px]">
+              <SelectTrigger className="h-9 w-full sm:w-[130px] rounded-2xl bg-muted/40 border-0 shadow-none focus:ring-2 focus:ring-primary/20 transition-all text-[13px] font-medium">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -56,7 +56,7 @@ export default function HistoryTab({
       
       <CardContent className="pt-2">
         {filteredHistory.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
+          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl">
             <CalendarX className="h-8 w-8 mb-3 opacity-30" />
             <div className="text-[13px] font-medium">No history yet</div>
             <div className="text-[13px] opacity-70 mt-1">Your past logs will appear here.</div>

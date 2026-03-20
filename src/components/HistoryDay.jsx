@@ -46,10 +46,10 @@ export default function HistoryDay({
 
       {/* 2. TIMELINE CONTENT CARD */}
       <div className="flex-1 pb-6">
-        <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+        <div className={`rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple transition-all duration-300 overflow-hidden ${
           expanded 
-            ? "bg-background/80 shadow-md border-border/60 backdrop-blur-md" 
-            : "bg-background/40 shadow-sm border-border/20 hover:border-border/40 hover:bg-background/60"
+            ? "bg-background/80" 
+            : "hover:shadow-apple-hover hover:bg-background/80"
         }`}>
           
           {/* Header (Clickable) */}
@@ -86,9 +86,9 @@ export default function HistoryDay({
             }`}
           >
             <div className="overflow-hidden">
-              <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-3 pt-2 border-t border-border/40">
+              <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-1 pt-2">
                 {items.map(({ hid, habit, entry }) => (
-                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl bg-background/50 hover:bg-background shadow-sm border border-transparent hover:border-border/50 px-4 py-3 transition-all">
+                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 px-4 py-3 transition-all">
                     
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
