@@ -13,7 +13,7 @@ export default {
         },
         'success-flash': {
           '0%, 100%': { backgroundColor: 'transparent' },
-          '50%': { backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' }, // Soft success green
+          '50%': { backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' },
         }
       },
       animation: {
@@ -22,14 +22,11 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
-          'ui-sans-serif',
-          'system-ui',
-          'sans-serif',
-          '"Apple Color Emoji"',
-          '"Segoe UI Emoji"',
-          '"Segoe UI Symbol"',
-          '"Noto Color Emoji"'
+          '-apple-system',
+          'BlinkMacSystemFont',
+          '"SF Pro Text"',
+          '"Helvetica Neue"',
+          'sans-serif'
         ]
       },
       borderRadius: {
