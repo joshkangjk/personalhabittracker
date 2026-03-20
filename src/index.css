@@ -97,7 +97,7 @@ body {
     @apply text-[15px] font-normal text-foreground/90;
   }
 
-  strong, b, .font-medium {
+  strong, b {
     @apply font-medium;
   }
 
