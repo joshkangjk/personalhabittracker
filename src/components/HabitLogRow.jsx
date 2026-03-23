@@ -3,7 +3,7 @@ import React, { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { GripVertical } from "lucide-react";
+import { GripVertical, Minus, Plus } from "lucide-react";
 import EditHabitDialog from "./EditHabitDialog";
 
 export default function HabitLogRow({
@@ -124,8 +124,21 @@ export default function HabitLogRow({
       data-habit-id={habit.id}
     >
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 md:p-5">
+        {/* 1. THE IDENTITY ZONE (Left Side) */}
         <div className="flex flex-col flex-1 min-w-0 px-1">
-          <span className={`font-medium text-[15px] truncate transition-colors duration-200 ${valueFlash ? "text-green-600 dark:text-green-400" : ""}`}>{habit.name}</span>
+          {/* We wrap the name in the Edit Dialog so the name itself is the button! */}
+          <EditHabitDialog
+            key={`${habit.id}-${JSON.stringify(habit.goals)}`} 
+            habit={habit}
+            onSave={onEditHabit}
+            onDeleteHabit={onDelete}
+            clampNumber={clampNumber}
+          >
+            <button className={`text-left font-medium text-[15px] truncate transition-colors duration-200 hover:opacity-70 focus-visible:outline-none focus-visible:opacity-70 ${valueFlash ? "text-green-600 dark:text-green-400" : "text-foreground"}`}>
+              {habit.name}
+            </button>
+          </EditHabitDialog>
+
           {goalValue > 0 ? (
             <span className="text-[13px] text-muted-foreground truncate mt-0.5">
               {formatNumberWithDecimals(goalValue, dec)} {habit.unit || ""} / {goalPeriod}
@@ -135,12 +148,10 @@ export default function HabitLogRow({
           )}
         </div>
 
-        <div className="flex items-center justify-between md:justify-end gap-3 md:gap-4 shrink-0">
+        <div className="flex items-center justify-between md:justify-end gap-3 shrink-0">
           
-          {/* --- PREMIUM INPUT CONTROLS --- */}
           {habit.type === "checkbox" ? (
             <label
-              // ADDED: Conditional animate-success-bounce class
               className={`cursor-pointer rounded-xl bg-muted/40 px-3 py-2 transition-all duration-200 hover:bg-muted/50 active:scale-[0.98] ${
                 hasEntry && value ? "opacity-100 bg-primary/5 border-primary/20" : "opacity-80 hover:opacity-100"
               } ${valueFlash ? "animate-success-bounce" : ""} flex items-center gap-2.5`}
@@ -149,23 +160,23 @@ export default function HabitLogRow({
               <span className={`text-[13px] font-medium select-none ${value ? "text-primary" : "text-muted-foreground"}`}>{value ? "Done" : "Mark"}</span>
             </label>
           ) : (
+            /* --- THE NEW UNIFIED STEPPER ISLAND --- */
             <div 
-               // ADDED: Conditional animate-success-bounce class
-               className={`flex items-center bg-muted/40 rounded-xl overflow-hidden transition-all duration-200 ${
-                 valueFlash ? "animate-success-bounce border-green-500/50" : ""
+               className={`flex items-center bg-muted/40 rounded-full p-1 border border-border/50 transition-all duration-200 ${
+                 valueFlash ? "animate-success-bounce border-green-500/50 shadow-sm" : ""
                }`}
             >
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                className={`h-9 w-9 rounded-none hover:bg-muted/50 active:bg-muted ${
+                className={`p-1.5 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(-1)}
               >
-                −
-              </Button>
+                <Minus className="h-3.5 w-3.5" />
+              </button>
 
+              {/* We kept your Input so you can still type directly! */}
               <Input
                 type="number"
                 step="any"
@@ -173,28 +184,27 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className={`w-[60px] h-9 text-center font-semibold border-0 rounded-none shadow-none focus-visible:ring-0 transition-colors ${
+                className={`w-[46px] h-7 px-1 text-center text-[13px] font-medium tabular-nums border-0 rounded-none shadow-none focus-visible:ring-0 transition-colors ${
                   valueFlash ? "text-green-600 dark:text-green-400" : "text-foreground"
                 } bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               />
 
-              <Button
+              <button
                 type="button"
-                variant="ghost"
-                className={`h-9 w-9 rounded-none hover:bg-muted/50 active:bg-muted ${
+                className={`p-1.5 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(1)}
               >
-                +
-              </Button>
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
           )}
-          {/* ------------------------------ */}
 
-          <div className="flex items-center justify-end gap-1.5 pl-1">
+          {/* 2. THE TRAILING ACTION TRAY (Grouped seamlessly) */}
+          <div className="flex items-center gap-2 pl-2 border-l border-border/50">
             <div
-              className={`rounded-lg p-2 text-muted-foreground transition-all duration-200 ${
+              className={`rounded-lg p-1.5 text-muted-foreground transition-all duration-200 ${
                 isMobile ? "" : "cursor-grab active:cursor-grabbing hover:bg-muted/50 hover:text-foreground"
               } ${dragging || touchDragging ? "opacity-100 bg-background/80 shadow-md ring-1 ring-border" : "opacity-40"}`}
               title={isMobile ? "Press and drag to reorder" : "Drag to reorder"}
@@ -204,15 +214,8 @@ export default function HabitLogRow({
             >
               <GripVertical className="h-4 w-4" />
             </div>
-
-            <EditHabitDialog
-              key={`${habit.id}-${JSON.stringify(habit.goals)}`} 
-              habit={habit}
-              onSave={onEditHabit}
-              onDeleteHabit={onDelete}
-              clampNumber={clampNumber}
-            />
           </div>
+
         </div>
       </div>
     </div>

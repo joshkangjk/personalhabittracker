@@ -5,9 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Pencil } from "lucide-react";
 
-export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNumber }) {
+export default function EditHabitDialog({ habit, onSave, onDeleteHabit, clampNumber, children }) {
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [name, setName] = useState(() => habit.name || "");
@@ -42,9 +41,7 @@ function save() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" className="h-9 w-9 px-0 rounded-xl" aria-label="Edit habit">
-          <Pencil className="h-4 w-4" />
-        </Button>
+        {children}
       </DialogTrigger>
 
       <DialogContent className="max-w-xl">
