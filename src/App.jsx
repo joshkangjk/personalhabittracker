@@ -266,7 +266,7 @@ export default function HabitTrackerMVP() {
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
-                  <SettingsIcon className="h-[1.2rem] w-[1.2rem]" />
+                  <SettingsIcon className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-sm rounded-2xl p-6">
@@ -285,7 +285,7 @@ export default function HabitTrackerMVP() {
                       className="w-full justify-between rounded-xl h-12 px-4 bg-muted/40 hover:bg-muted/60 text-[15px] font-medium shadow-none transition-all"
                     >
                       <div className="flex items-center gap-3">
-                        {theme === "dark" ? <Moon className="h-5 w-5 text-muted-foreground" /> : <Sun className="h-5 w-5 text-muted-foreground" />}
+                        {theme === "dark" ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
                         Theme
                       </div>
                       <span className="text-muted-foreground text-[13px] font-normal">{theme === "dark" ? "Dark mode" : "Light mode"}</span>

@@ -91,7 +91,7 @@ export default function DailyLogTab({
         <div className="grid gap-3">
           {habits.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <ListX className="h-10 w-10 mb-3 opacity-20" />
+              <ListX className="h-10 w-10 mb-3 opacity-20 strokeWidth={1.5}" />
               <div className="text-[15px] font-medium">No habits yet</div>
               <div className="text-[13px] opacity-70">Click 'Add Habit' to get started.</div>
             </div>

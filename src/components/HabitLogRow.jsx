@@ -202,7 +202,7 @@ export default function HabitLogRow({
               onTouchMove={isMobile ? handleTouchMove : undefined}
               onTouchEnd={isMobile ? handleTouchEnd : undefined}
             >
-              <GripVertical className="h-[18px] w-[18px]" />
+              <GripVertical className="h-4 w-4" />
             </div>
 
             <EditHabitDialog

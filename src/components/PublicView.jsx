@@ -295,7 +295,7 @@ export default function PublicView({ token }) {
             <CardContent className="pt-2">
               {recentDates.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-                  <History className="h-8 w-8 mb-3 opacity-30" />
+                  <History className="h-8 w-8 mb-3 opacity-30 strokeWidth={1.5}" />
                   <div className="text-[13px] font-medium">No recent logs</div>
                 </div>
               ) : (

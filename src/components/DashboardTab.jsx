@@ -133,7 +133,7 @@ export default function DashboardTab({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-              <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
+              <BarChart3 className="h-8 w-8 mb-3 opacity-30 strokeWidth={1.5}" />
               <div className="text-[15px] font-medium">Not enough data</div>
               <div className="text-[13px] opacity-70 mt-1">Add a habit first to visualize your progress.</div>
             </div>
