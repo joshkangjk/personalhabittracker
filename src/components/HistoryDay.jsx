@@ -88,7 +88,7 @@ export default function HistoryDay({
             <div className="overflow-hidden">
               <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-1 pt-2">
                 {items.map(({ hid, habit, entry }) => (
-                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 px-4 py-3 transition-all">
+                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 p-4 sm:p-5 transition-all">
                     
                     <div className="flex items-center gap-3">
                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />

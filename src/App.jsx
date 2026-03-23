@@ -236,16 +236,16 @@ export default function HabitTrackerMVP() {
             
             <div className="hidden md:flex items-center">
               {cloudError ? (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-2.5 py-1 rounded-full">
-                  <AlertCircle className="h-3.5 w-3.5" /> Error
+                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-3 rounded-full">
+                  <AlertCircle className="h-3.5 w-3.5 -mt-[1px]" /> Error
                 </span>
               ) : cloudReady ? (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70" /> Synced
+                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-3 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70 -mt-[1px]" /> Synced
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing
+                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-3 rounded-full">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin -mt-[1px]" /> Syncing
                 </span>
               )}
             </div>

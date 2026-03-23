@@ -107,7 +107,7 @@ export default function DashboardTab({
         {/* Optional decorative glow inside the trend card */}
         <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
         
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-6">
           <div className="space-y-1">
             <CardTitle className="text-[17px] font-semibold tracking-tight">Habit Trend</CardTitle>
             <p className="text-[13px] text-muted-foreground">

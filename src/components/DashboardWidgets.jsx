@@ -306,7 +306,7 @@ export function YearSummaryList({ items, selectedHabitId, onSelectHabit, mode = 
         <button
           key={habit.id}
           onClick={() => onSelectHabit?.(habit.id)}
-          className={`w-full text-left rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple p-4 hover:shadow-apple-hover hover:bg-background/80 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
+          className={`w-full text-left rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple p-4 sm:p-5 hover:shadow-apple-hover hover:bg-background/80 transition-all active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-muted/30 ${
             selectedHabitId === habit.id ? "ring-2 ring-muted/30 bg-accent/10" : ""
           }`}
         >
