@@ -16,7 +16,7 @@ import {
 } from "../lib/stats";
 import { normalizePublicHabit } from "../services/habitService";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
-import { useTheme } from "./hooks/useTheme";
+import { useTheme } from "../hooks/useTheme";
 
 export default function PublicView({ token }) {
   const { theme, toggleTheme } = useTheme();
