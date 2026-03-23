@@ -57,7 +57,7 @@ function save() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               <div className="grid gap-1.5">
                 <Label className="text-[13px] text-muted-foreground">Name</Label>
-                <Input className="h-11 text-[15px]" value={name} onChange={(e) => setName(e.target.value)} />
+                <Input className="h-11 text-[15px]" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
               </div>
               <div className="grid gap-1.5">
                 <Label className="text-[13px] text-muted-foreground">Unit</Label>
