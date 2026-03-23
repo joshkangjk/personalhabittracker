@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, MoreVertical, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle, Sun, Moon } from "lucide-react";
+import { Download, Settings, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle, Sun, Moon } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
 import PublicView from "./components/PublicView";
@@ -43,7 +43,7 @@ export default function HabitTrackerMVP() {
   const [historyMonth, setHistoryMonth] = useState("all");
   const [dashboardMonth, setDashboardMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, "0"));
   const [dashboardSummaryMode, setDashboardSummaryMode] = useState("year");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [focusedHabitId, setFocusedHabitId] = useState("");
   const [shareBusy, setShareBusy] = useState(false);
   const [shareOk, setShareOk] = useState(false);
@@ -228,101 +228,109 @@ export default function HabitTrackerMVP() {
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
       <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        <header className="relative flex flex-col gap-4 md:flex-row md:items-center md:justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20">
+        <header className="relative flex items-center justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20">
           
-          <div className="flex items-center gap-3">
+          {/* LEFT SIDE: Title & Cloud Status */}
+          <div className="flex items-center gap-3 md:gap-4">
             <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
             
             <div className="hidden md:flex items-center">
               {cloudError ? (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-2 py-1 rounded-full">
-                  <AlertCircle className="h-3.5 w-3.5" />
-                  Error
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-2.5 py-1 rounded-full">
+                  <AlertCircle className="h-3.5 w-3.5" /> Error
                 </span>
               ) : cloudReady ? (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground" title="Synced to cloud">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70" />
-                  Synced
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70" /> Synced
                 </span>
               ) : (
-                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground">
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  Syncing
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Syncing
                 </span>
               )}
             </div>
           </div>
 
-          {/* Desktop Controls */}
-          <div className="hidden md:flex items-center gap-2">
-            <YearPicker value={selectedYear} onChange={handleYearChange} options={yearOptions} />
-
-            <div className="h-6 w-px bg-border/50 mx-1" />
-
-            <Button onClick={toggleTheme} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
-              {theme === "dark" ? <Sun className="h-[1.1rem] w-[1.1rem]" /> : <Moon className="h-[1.1rem] w-[1.1rem]" />}
-            </Button>
-
-            <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-4" disabled={shareBusy}>
-              {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
-            </Button>
+          {/* RIGHT SIDE: Primary Actions */}
+          <div className="flex items-center gap-2 sm:gap-4">
             
-            <Button onClick={exportJSON} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground" title="Export Data">
-              <Download className="h-[1.1rem] w-[1.1rem]" />
-            </Button>
-            
-            <Button onClick={handleSignOut} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-destructive" title="Sign out">
-              <LogOut className="h-[1.1rem] w-[1.1rem]" />
-            </Button>
+            {/* Desktop Share Button (Hidden on tiny mobile screens) */}
+            <div className="hidden sm:flex items-center gap-3">
+              <ShareStatus shareError={shareError} shareOk={shareOk} />
+              <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-5 shadow-sm" disabled={shareBusy}>
+                {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
+              </Button>
+            </div>
 
-            <ShareStatus shareError={shareError} shareOk={shareOk} />
-          </div>
-
-          {/* Mobile 3-Dot Menu */}
-          <div className="md:hidden absolute top-0 right-0 p-3">
-            <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            {/* UNIFIED SETTINGS MODAL */}
+            <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" className="h-9 w-9 px-0 rounded-full" aria-label="More">
-                  <MoreVertical className="h-5 w-5 text-muted-foreground" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                  <SettingsIcon className="h-[1.2rem] w-[1.2rem]" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-md rounded-2xl">
-                <DialogHeader>
-                  <DialogTitle className="text-left font-semibold tracking-tight">Menu</DialogTitle>
+              <DialogContent className="max-w-sm rounded-2xl p-6">
+                <DialogHeader className="pb-2">
+                  <DialogTitle className="text-[17px] font-semibold tracking-tight text-center">Settings</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid gap-4 mt-2">
-                  <YearPicker
-                    value={selectedYear}
-                    onChange={handleYearChange}
-                    options={yearOptions}
-                    triggerClassName="rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20"
-                    labelClassName="text-[13px] font-medium text-muted-foreground"
-                  />
-
-                  {/* Restyled mobile buttons to match desktop aesthetic */}
-                  <div className="grid gap-2">
-
-                    <Button onClick={toggleTheme} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-foreground">
-                      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} 
-                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
-                    </Button>
-
-                    <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full justify-center" disabled={shareBusy}>
-                      {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share link
-                    </Button>
-
-                    <ShareStatus shareError={shareError} shareOk={shareOk} />
-
-                    <div className="h-px bg-border/50 my-1" />
-
-                    <Button onClick={handleMobileExport} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-foreground">
-                      <Download className="h-4 w-4" /> Export Data
-                    </Button>
-                    <Button onClick={handleMobileSignOut} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10">
-                      <LogOut className="h-4 w-4" /> Sign out
+                <div className="grid gap-6">
+                  
+                  {/* Section: Appearance */}
+                  <div className="space-y-2.5">
+                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Appearance</h3>
+                    <Button 
+                      onClick={toggleTheme} 
+                      variant="ghost" 
+                      className="w-full justify-between rounded-xl h-12 px-4 bg-muted/40 hover:bg-muted/60 text-[15px] font-medium shadow-none transition-all"
+                    >
+                      <div className="flex items-center gap-3">
+                        {theme === "dark" ? <Moon className="h-5 w-5 text-muted-foreground" /> : <Sun className="h-5 w-5 text-muted-foreground" />}
+                        Theme
+                      </div>
+                      <span className="text-muted-foreground text-[13px] font-normal">{theme === "dark" ? "Dark mode" : "Light mode"}</span>
                     </Button>
                   </div>
+
+                  {/* Section: Data & Time */}
+                  <div className="space-y-2.5">
+                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Data</h3>
+                    <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 h-12">
+                      <span className="text-[15px] font-medium">Tracking Year</span>
+                      <YearPicker
+                        value={selectedYear}
+                        onChange={handleYearChange}
+                        options={yearOptions}
+                        triggerClassName="h-8 rounded-lg bg-background/80 border-0 shadow-sm focus:ring-0 text-[13px] font-medium"
+                        labelClassName="hidden"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section: Mobile Share (Only visible on phones) */}
+                  <div className="sm:hidden space-y-2.5">
+                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Share</h3>
+                    <Button onClick={handleCreateShareLink} variant="default" className="w-full gap-2 rounded-xl h-12 text-[15px] font-medium shadow-sm" disabled={shareBusy}>
+                      {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share Public Link
+                    </Button>
+                    <div className="flex justify-center pt-1">
+                      <ShareStatus shareError={shareError} shareOk={shareOk} />
+                    </div>
+                  </div>
+
+                  {/* Section: Account */}
+                  <div className="space-y-2.5">
+                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Account</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Button onClick={() => { exportJSON(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-xl h-11 text-[13px] bg-muted/40 hover:bg-muted/60 shadow-none">
+                        <Download className="h-4 w-4" /> Export Data
+                      </Button>
+                      <Button onClick={() => { handleSignOut(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-xl h-11 text-[13px] bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive shadow-none">
+                        <LogOut className="h-4 w-4" /> Sign Out
+                      </Button>
+                    </div>
+                  </div>
+
                 </div>
               </DialogContent>
             </Dialog>
