@@ -3,8 +3,8 @@ import React, { useState, useMemo, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, History, BarChart3, Lock } from "lucide-react";
-
+import { ChevronDown, History, BarChart3, Lock, Sun, Moon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatPrettyDate } from "../lib/helpers";
 import {
   listDatesInYear,
@@ -16,8 +16,10 @@ import {
 } from "../lib/stats";
 import { normalizePublicHabit } from "../services/habitService";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
+import { useTheme } from "./hooks/useTheme";
 
 export default function PublicView({ token }) {
+  const { theme, toggleTheme } = useTheme();
   const [year] = useState(new Date().getFullYear());
   const [dashboardSummaryMode, setDashboardSummaryMode] = useState("year");
   const [dashboardMonth, setDashboardMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, "0"));
@@ -136,9 +138,17 @@ export default function PublicView({ token }) {
           <div>
             <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
           </div>
-          <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full border border-border/50">
-            <Lock className="h-3.5 w-3.5" />
-            Public View
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* The Theme Toggle Button */}
+            <Button onClick={toggleTheme} variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
+              {theme === "dark" ? <Sun className="h-[1.1rem] w-[1.1rem]" /> : <Moon className="h-[1.1rem] w-[1.1rem]" />}
+            </Button>
+            
+            {/* The Public View Pill */}
+            <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full border border-border/50">
+              <Lock className="h-3.5 w-3.5" />
+              Public View
+            </div>
           </div>
         </header>
 
@@ -306,10 +316,10 @@ export default function PublicView({ token }) {
 
                         {/* Timeline Content */}
                         <div className="flex-1 pb-6">
-                          <div className={`rounded-2xl border transition-all duration-300 overflow-hidden ${
+                          <div className={`rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple transition-all duration-300 overflow-hidden ${
                             expanded 
-                              ? "bg-background/80 shadow-md border-border/60 backdrop-blur-md" 
-                              : "bg-background/40 shadow-sm border-border/20 hover:border-border/40 hover:bg-background/60"
+                              ? "bg-background/80" 
+                              : "hover:shadow-apple-hover hover:bg-background/80"
                           }`}>
                             
                             <div
@@ -339,9 +349,9 @@ export default function PublicView({ token }) {
                             </div>
 
                             {expanded && (
-                              <div className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-2 pt-1 border-t border-border/40">
+                              <div className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-1 pt-2">
                                 {items.map((it) => (
-                                  <div key={it.id} className="flex items-center justify-between gap-3 rounded-xl bg-background/50 shadow-sm border border-transparent px-3 py-2.5">
+                                  <div key={it.id} className="flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 px-3 py-2.5 transition-all">
                                     <div className="flex items-center gap-3">
                                       <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
                                       <div className="text-[13px] font-semibold">{it.label}</div>

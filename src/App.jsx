@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, MoreVertical, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle } from "lucide-react";
+import { Download, MoreVertical, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle, Sun, Moon } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
 import PublicView from "./components/PublicView";
@@ -18,8 +18,10 @@ import { listDatesInYear, habitStats, habitStatsMonth, buildHabitSeries, buildHa
 import { useHabitData } from "./hooks/useHabitData";
 import { useIsMobile } from "./hooks/useIsMobile";
 import { useHabitDragAndDrop } from "./hooks/useHabitDragAndDrop";
+import { useTheme } from "./hooks/useTheme";
 
 export default function HabitTrackerMVP() {
+  const { theme, toggleTheme } = useTheme();
   const {
     session,
     state,
@@ -257,6 +259,10 @@ export default function HabitTrackerMVP() {
 
             <div className="h-6 w-px bg-border/50 mx-1" />
 
+            <Button onClick={toggleTheme} variant="ghost" size="icon" className="rounded-full text-muted-foreground hover:text-foreground">
+              {theme === "dark" ? <Sun className="h-[1.1rem] w-[1.1rem]" /> : <Moon className="h-[1.1rem] w-[1.1rem]" />}
+            </Button>
+
             <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-4" disabled={shareBusy}>
               {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
             </Button>
@@ -296,6 +302,12 @@ export default function HabitTrackerMVP() {
 
                   {/* Restyled mobile buttons to match desktop aesthetic */}
                   <div className="grid gap-2">
+
+                    <Button onClick={toggleTheme} variant="ghost" className="gap-3 justify-start rounded-full text-muted-foreground hover:text-foreground">
+                      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} 
+                      {theme === "dark" ? "Light Mode" : "Dark Mode"}
+                    </Button>
+
                     <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full justify-center" disabled={shareBusy}>
                       {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share link
                     </Button>

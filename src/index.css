@@ -106,9 +106,18 @@ body {
     @apply border-border;
   }
   
-  /* Apple-style base typography */
+  /* Apple-style base typography and subtle cyclorama gradients */
   body {
-    @apply bg-background text-foreground leading-relaxed tracking-normal; 
+    @apply text-foreground leading-relaxed tracking-normal; 
+    /* Light mode: Pure white at the top, fading into the iOS grouped gray at the bottom */
+    background: linear-gradient(to bottom, hsl(0, 0%, 100%), hsl(var(--background)));
+    background-attachment: fixed;
+  }
+
+  .dark body {
+    /* Dark mode: Very dark gray at the top, fading into pure OLED black at the bottom */
+    background: linear-gradient(to bottom, hsl(240, 4%, 8%), hsl(var(--background)));
+    background-attachment: fixed;
   }
 
   /* 1. Ensure headings have tight tracking */
