@@ -63,36 +63,36 @@ body {
   }
 
   .dark {
-    /* Apple True Dark Mode (OLED Black) */
-    --background: 0 0% 0%; /* True pitch black */
-    --foreground: 0 0% 98%;
+    /* Soft Dark Mode (True Dark Grays, Soft Contrast) */
+    --background: 240 5% 8%; /* Rich dark gray canvas, not pure black (#131316) */
+    --foreground: 240 5% 86%; /* Soft off-white text to prevent eye-strain/halation */
     
-    --card: 240 4% 10%; /* Elevated dark gray cards (#1C1C1E) */
-    --card-foreground: 0 0% 98%;
+    --card: 240 5% 11%; /* Elevated dark gray cards */
+    --card-foreground: 240 5% 86%;
     
-    --popover: 240 4% 10%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 240 5% 11%;
+    --popover-foreground: 240 5% 86%;
     
-    --primary: 211 100% 50%; /* iOS Blue still pops in dark mode */
+    --primary: 211 100% 50%; /* Keep the iOS Blue popping */
     --primary-foreground: 0 0% 100%;
     
-    --secondary: 240 4% 15%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 240 5% 86%;
     
-    --muted: 240 4% 15%;
-    --muted-foreground: 240 5% 65%; /* Lighter system gray for dark mode */
+    --muted: 240 5% 15%;
+    --muted-foreground: 240 5% 60%; /* Softer gray for secondary text */
     
-    --accent: 240 4% 15%;
-    --accent-foreground: 0 0% 98%;
+    --accent: 240 5% 15%;
+    --accent-foreground: 240 5% 95%;
     
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
     
-    --border: 240 4% 15%; /* Deep gray borders */
-    --input: 240 4% 15%;
+    --border: 240 5% 18%; /* Extremely subtle borders */
+    --input: 240 5% 18%;
     --ring: 211 100% 50%;
     
-    /* Keep your existing chart colors */
+    /* Chart Colors */
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
