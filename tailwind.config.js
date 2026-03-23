@@ -11,18 +11,22 @@ export default {
         'apple-hover': '0 8px 30px rgba(0, 0, 0, 0.08)',
       },
       keyframes: {
-        'success-bounce': {
-          '0%, 100%': { transform: 'scale(1)' },
-          '50%': { transform: 'scale(1.15)' },
+        "success-bounce": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { 
+            transform: "scale(1.08)", 
+            // Apple's signature spring easing
+            animationTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" 
+          },
         },
-        'success-flash': {
-          '0%, 100%': { backgroundColor: 'transparent' },
-          '50%': { backgroundColor: 'hsl(142.1 76.2% 36.3% / 0.15)' },
-        }
+        "success-flash": {
+          "0%": { backgroundColor: "hsl(var(--primary) / 0.1)" },
+          "100%": { backgroundColor: "transparent" },
+        },
       },
       animation: {
-        'success-bounce': 'success-bounce 0.3s ease-in-out',
-        'success-flash': 'success-flash 0.5s ease-out',
+        "success-bounce": "success-bounce 0.4s ease-in-out",
+        "success-flash": "success-flash 0.5s ease-out",
       },
       fontFamily: {
         sans: [
