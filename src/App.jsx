@@ -257,7 +257,7 @@ export default function HabitTrackerMVP() {
             {/* Desktop Share Button (Hidden on tiny mobile screens) */}
             <div className="hidden sm:flex items-center gap-3">
               <ShareStatus shareError={shareError} shareOk={shareOk} />
-              <Button onClick={handleCreateShareLink} variant="default" className="gap-2 rounded-full px-5 shadow-sm" disabled={shareBusy}>
+              <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2 rounded-full px-5 shadow-none bg-primary/10 text-primary hover:bg-primary/20 font-medium transition-all" disabled={shareBusy}>
                 {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
               </Button>
             </div>
@@ -310,7 +310,7 @@ export default function HabitTrackerMVP() {
                   {/* Section: Mobile Share (Only visible on phones) */}
                   <div className="sm:hidden space-y-2.5">
                     <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Share</h3>
-                    <Button onClick={handleCreateShareLink} variant="default" className="w-full gap-2 rounded-xl h-12 text-[15px] font-medium shadow-sm" disabled={shareBusy}>
+                    <Button onClick={handleCreateShareLink} variant="secondary" className="w-full gap-2 rounded-xl h-12 text-[15px] font-medium shadow-none bg-primary/10 text-primary hover:bg-primary/20 transition-all" disabled={shareBusy}>
                       {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share Public Link
                     </Button>
                     <div className="flex justify-center pt-1">
