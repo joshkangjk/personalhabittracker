@@ -3,7 +3,7 @@ import { supabase } from "./supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Download, Settings, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle, Sun, Moon } from "lucide-react";
+import { Download, Settings as SettingsIcon, Link as LinkIcon, Loader2, LogOut, CheckCircle2, AlertCircle, Sun, Moon } from "lucide-react";
 
 import LoginScreen from "./components/LoginScreen";
 import PublicView from "./components/PublicView";
