@@ -162,21 +162,24 @@ export default function HabitLogRow({
           ) : (
             /* --- THE NEW UNIFIED STEPPER ISLAND --- */
             <div 
-               className={`flex items-center bg-muted/40 rounded-full p-1 sm:p-1.5 border border-border/50 transition-all duration-200 ${
+               className={`flex items-center bg-muted/40 rounded-full p-1 border border-border/50 transition-all duration-200 ${
                  valueFlash ? "animate-success-bounce border-green-500/50 shadow-sm" : ""
                }`}
             >
+              {/* Wider horizontal padding (px-3) for a larger tap target, keeping vertical slim (py-1.5) */}
               <button
                 type="button"
-                className={`p-2 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
+                className={`px-3 py-1.5 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(-1)}
               >
-                <Minus className="h-4 w-4" />
+                <Minus className="h-3.5 w-3.5" />
               </button>
 
-              {/* iOS Anti-Zoom Fix: Font size MUST be exactly 16px or larger! */}
+              {/* 1. Bulletproof iOS Anti-Zoom: style={{ fontSize: "16px" }} 
+                2. Longer surface area: w-[70px] sm:w-[80px]
+              */}
               <Input
                 type="number"
                 step="any"
@@ -184,19 +187,20 @@ export default function HabitLogRow({
                 onChange={handleNumberChange}
                 onBlur={handleNumberBlur}
                 onKeyDown={handleNumberKeyDown}
-                className={`w-[54px] sm:w-[60px] h-8 sm:h-9 px-1 text-center text-[16px] font-medium tabular-nums border-0 rounded-none shadow-none focus-visible:ring-0 transition-colors ${
+                style={{ fontSize: "16px" }} 
+                className={`w-[70px] sm:w-[80px] h-7 px-1 text-center font-medium tabular-nums border-0 rounded-none shadow-none focus-visible:ring-0 transition-colors ${
                   valueFlash ? "text-green-600 dark:text-green-400" : "text-foreground"
                 } bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
               />
 
               <button
                 type="button"
-                className={`p-2 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
+                className={`px-3 py-1.5 rounded-full hover:bg-background hover:shadow-sm transition-all text-muted-foreground hover:text-foreground ${
                   committing ? "pointer-events-none opacity-50" : ""
                 }`}
                 onClick={() => bump(1)}
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
               </button>
             </div>
           )}
