@@ -359,7 +359,7 @@ export default function HabitTrackerMVP() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="log" className="space-y-6 mt-6">
+          <TabsContent value="log" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
             <DailyLogTab
               habits={state.habits}
               entries={state.entries}
@@ -372,7 +372,7 @@ export default function HabitTrackerMVP() {
             />
           </TabsContent>
 
-          <TabsContent value="dashboard" className="space-y-6 mt-6">
+          <TabsContent value="dashboard" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
             <DashboardTab
               dashboardSummaryMode={dashboardSummaryMode}
               setDashboardSummaryMode={setDashboardSummaryMode}
@@ -389,7 +389,7 @@ export default function HabitTrackerMVP() {
             />
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-6 mt-6">
+          <TabsContent value="history" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
             <HistoryTab
               historyMonth={historyMonth}
               setHistoryMonth={setHistoryMonth}
