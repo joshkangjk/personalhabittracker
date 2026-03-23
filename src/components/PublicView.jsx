@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ChevronDown, History, BarChart3, Lock, Sun, Moon } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrettyDate } from "../lib/helpers";
 import {
   listDatesInYear,
@@ -115,8 +116,25 @@ export default function PublicView({ token }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[13px] font-medium text-muted-foreground">
-        Loading shared tracker...
+      <div className="min-h-screen w-full p-4 md:p-6 space-y-4 md:space-y-6">
+        {/* Header Skeleton */}
+        <Skeleton className="h-[72px] w-full max-w-6xl mx-auto" />
+
+        <div className="max-w-6xl mx-auto grid gap-4 lg:gap-6">
+          <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
+            {/* Summary Card Skeleton */}
+            <Skeleton className="h-[250px] w-full" />
+            {/* Trend Card Skeleton */}
+            <Skeleton className="h-[350px] w-full" />
+          </div>
+
+          {/* History Timeline Skeleton */}
+          <div className="space-y-4">
+            <Skeleton className="h-[80px] w-full" />
+            <Skeleton className="h-[80px] w-full opacity-70" />
+            <Skeleton className="h-[80px] w-full opacity-40" />
+          </div>
+        </div>
       </div>
     );
   }
