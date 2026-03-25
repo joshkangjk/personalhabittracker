@@ -10,7 +10,6 @@ export default function HistoryDay({
   entryToDisplay,
   isLast 
 }) {
-  // 1. The state to track if this specific day is expanded or closed
   const [isOpen, setIsOpen] = useState(false);
 
   const entriesExist = dayEntries && Object.keys(dayEntries).length > 0;
@@ -18,90 +17,130 @@ export default function HistoryDay({
   const activeHabits = habits.filter(h => dayEntries && dayEntries[h.id] !== undefined);
   const totalLogged = activeHabits.length;
 
-  // If there are no logs for this day, we can just skip rendering it entirely 
-  // to keep the history feed hyper-focused on actual activity.
+  const completionRatio = habits.length ? totalLogged / habits.length : 0;
+  const todayISO = new Date().toISOString().split("T")[0];
+  const isToday = dateISO === todayISO;
+
   if (!entriesExist || totalLogged === 0) return null;
 
   return (
-    <div className={`relative bg-background/70 backdrop-blur-[10px] shadow-apple rounded-2xl border border-border/20 overflow-hidden ${isLast ? "mb-0" : "mb-3"}`}>
+    <div 
+      className={`relative rounded-2xl border transition-all duration-300 overflow-hidden
+        ${isOpen 
+          ? "bg-background/90 shadow-lg border-border/30 ring-1 ring-border/40 scale-[1.01]" 
+          : "bg-background/60 border-border/10 hover:bg-background/70"
+        }
+        ${isToday ? "ring-2 ring-primary/20" : ""}
+        ${isLast ? "mb-0" : "mb-4"}
+      `}
+      style={undefined}
+    >
       
-      {/* --- 1. THE CLICKABLE HEADER (Summary) --- */}
+      {/* HEADER */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between p-4 sm:px-5 sm:py-4 hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:bg-muted/30"
+        className="w-full flex items-center justify-between p-5 transition-colors focus-visible:outline-none"
       >
         <div className="flex items-center gap-3">
-          {/* The Chevron smoothly rotates 90 degrees when opened */}
-          <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ease-out ${isOpen ? "rotate-90" : ""}`} />
-          <h3 className="text-[16px] font-semibold tracking-tight text-foreground">
-            {prettyDate}
-          </h3>
+          <ChevronRight 
+            className={`h-5 w-5 text-muted-foreground transition-all duration-300 ease-out 
+            ${isOpen ? "rotate-90 translate-x-1" : ""}`} 
+          />
+
+          <div className="flex flex-col items-start">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[17px] font-semibold tracking-tight text-foreground">
+                {prettyDate}
+              </h3>
+              {isToday && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                  Today
+                </span>
+              )}
+            </div>
+            <span className="text-[12px] text-muted-foreground">
+              {totalLogged} habits completed
+            </span>
+          </div>
         </div>
-        
-        {/* Subtle pill showing how much was accomplished */}
-        <span className="text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
-          {totalLogged} logged
-        </span>
       </button>
 
-      {/* --- 2. THE ANIMATED BODY (Dropdown Content) --- */}
-      {/* We use a CSS Grid trick here to animate height from 0 to auto beautifully */}
+      {/* BODY */}
       <div 
-        className={`grid transition-all duration-300 ease-out ${
-          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-        }`}
+        className={`grid transition-all duration-300 ease-out
+          ${isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}
+        `}
       >
         <div className="overflow-hidden">
-          {/* The top border separates the header from the expanded list */}
           <div className="divide-y divide-border/30 border-t border-border/20 bg-background/30">
-            {activeHabits.map((h) => {
+            
+            {activeHabits.map((h, index) => {
               const entry = dayEntries[h.id];
               const isDone = h.type === "checkbox" ? Boolean(entry?.value) : Number(entry?.value) > 0;
               const displayValue = entryToDisplay ? entryToDisplay(h, entry) : entry?.value;
 
               return (
                 <div 
-                  key={h.id} 
-                  className="group flex items-center justify-between gap-3 p-4 sm:px-5 sm:py-3.5 transition-colors hover:bg-muted/20"
+                  key={h.id}
+                  style={{
+                    transitionDelay: isOpen ? `${index * 40}ms` : "0ms",
+                    opacity: isOpen ? 1 : 0,
+                    transform: isOpen ? "translateY(0)" : "translateY(6px)"
+                  }}
+                  className={`group flex items-center justify-between gap-3 p-4 transition-all
+                    ${isDone ? "bg-muted/30" : "hover:bg-muted/20"}
+                    active:scale-[0.99]
+                  `}
                 >
-                  <div className="flex items-center gap-3.5 overflow-hidden pl-2 sm:pl-8">
-                    {/* Status Icon */}
-                    <div className={`shrink-0 transition-colors ${isDone ? "text-green-500" : "text-muted-foreground/30"}`}>
-                      {isDone ? <CheckCircle2 className="h-[18px] w-[18px]" /> : <Circle className="h-[18px] w-[18px]" />}
+                  
+                  {/* LEFT */}
+                  <div className="flex items-center gap-3.5 overflow-hidden">
+                    <div 
+                      className={`shrink-0 transition-colors`}
+                      style={{ color: isDone ? undefined : undefined }}
+                    >
+                      {isDone 
+                        ? <CheckCircle2 className="h-[18px] w-[18px] text-foreground" /> 
+                        : <Circle className="h-[18px] w-[18px] text-muted-foreground/30" />
+                      }
                     </div>
-                    
-                    {/* Habit Name */}
-                    <div className="flex flex-col truncate">
-                      <span className={`text-[14px] font-medium truncate ${isDone ? "text-foreground" : "text-foreground/70"}`}>
-                        {h.name}
-                      </span>
-                    </div>
+
+                    <span 
+                      className={`text-[14px] font-medium truncate transition-all
+                        ${isDone ? "text-foreground/60" : "text-foreground"}
+                      `}
+                    >
+                      {h.name}
+                    </span>
                   </div>
 
-                  {/* Right Side: Value and Hover-Delete */}
+                  {/* RIGHT */}
                   <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right">
-                      <span className={`text-[14px] font-semibold tabular-nums ${isDone ? "text-foreground" : "text-muted-foreground"}`}>
-                        {displayValue}
-                      </span>
-                    </div>
                     
-                    {/* The Delete Button */}
+                    <span 
+                      className={`text-[15px] font-semibold tabular-nums transition-all
+                        ${isDone ? "text-foreground scale-105" : "text-muted-foreground"}
+                      `}
+                    >
+                      {displayValue}
+                    </span>
+
                     <button 
-                      onClick={() => onDeleteOne(h.id)}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
+                      onClick={(e) => { e.stopPropagation(); onDeleteOne(h.id); }}
+                      className="opacity-40 hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
                       title="Delete log"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
+
                   </div>
                 </div>
               );
             })}
+
           </div>
         </div>
       </div>
-      
     </div>
   );
 }

@@ -1,11 +1,34 @@
 // src/components/HistoryTab.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarX } from "lucide-react";
 import HistoryDay from "./HistoryDay";
 import { formatPrettyDate } from "../lib/helpers";
 import { entryToDisplay } from "../lib/stats";
+
+function useCountUp(value, duration = 400) {
+  const [display, setDisplay] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const step = value / (duration / 16);
+
+    const interval = setInterval(() => {
+      start += step;
+      if (start >= value) {
+        setDisplay(value);
+        clearInterval(interval);
+      } else {
+        setDisplay(Math.floor(start));
+      }
+    }, 16);
+
+    return () => clearInterval(interval);
+  }, [value]);
+
+  return display;
+}
 
 export default function HistoryTab({
   historyMonth,
@@ -15,23 +38,30 @@ export default function HistoryTab({
   habits,
   removeLog
 }) {
+  const animatedDays = useCountUp(filteredHistory.length);
   return (
     <Card>
-      <CardHeader className="pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col gap-4">
           
-          {/* Left Side: Titles */}
-          <div className="flex items-center justify-between w-full sm:w-auto">
-            <div className="space-y-1">
-              <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
-              <p className="text-[13px] text-muted-foreground">Your past logs and progress.</p>
-            </div>
+          {/* Top: Title */}
+          <div>
+            <CardTitle className="text-[20px] font-semibold tracking-tight">
+              History
+            </CardTitle>
+            <p className="text-[13px] text-muted-foreground mt-1">
+              Review your past activity and consistency.
+            </p>
           </div>
 
-          {/* Right Side: Month Selector */}
-          <div className="flex items-center w-full sm:w-auto">
+          {/* Bottom: Controls */}
+          <div className="flex items-center justify-between">
+            <div className="text-[13px] text-muted-foreground">
+              {animatedDays} days logged
+            </div>
+
             <Select value={historyMonth} onValueChange={setHistoryMonth}>
-              <SelectTrigger className="h-9 w-full sm:w-[130px] rounded-2xl bg-muted/40 border-0 shadow-none focus:ring-2 focus:ring-primary/20 transition-all text-[13px] font-medium">
+              <SelectTrigger className="h-9 w-[140px] rounded-xl bg-muted/40 border-0 shadow-none focus:ring-2 focus:ring-primary/20 transition-all text-[13px] font-medium">
                 <SelectValue placeholder="Month" />
               </SelectTrigger>
               <SelectContent className="rounded-xl">
@@ -57,26 +87,39 @@ export default function HistoryTab({
       
       <CardContent className="pt-2">
         {filteredHistory.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl">
-            <CalendarX className="h-8 w-8 mb-3 opacity-30" />
-            <div className="text-[15px] font-medium">No history yet</div>
-            <div className="text-[13px] opacity-70 mt-1">Your past logs will appear here.</div>
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground bg-gradient-to-b from-transparent to-muted/20 rounded-2xl">
+            <CalendarX className="h-9 w-9 mb-4 opacity-30" />
+            <div className="text-[16px] font-semibold">No history yet</div>
+            <div className="text-[13px] opacity-70 mt-1">
+              Start logging habits to see your progress here.
+            </div>
           </div>
         ) : (
-          <div className="relative mt-2">
-            {filteredHistory.map((d, index) => (
-               <HistoryDay
-                 key={d}
-                 dateISO={d}
-                 dayEntries={entries[d]}
-                 habits={habits}
-                 onDeleteOne={(habitId) => removeLog(d, habitId)}
-                 formatPrettyDate={formatPrettyDate}
-                 entryToDisplay={entryToDisplay}
-                 isLast={index === filteredHistory.length - 1}
-               />
-            ))}
-          </div>
+          <>
+            <div className="h-px bg-gradient-to-r from-transparent via-border/40 to-transparent mb-3" />
+            <div className="relative mt-4 space-y-1">
+              <div className="flex flex-col">
+                {filteredHistory.map((d, index) => (
+                  <div
+                    key={d}
+                    style={{
+                      animation: `fadeUp 0.4s ease ${index * 40}ms both`
+                    }}
+                  >
+                    <HistoryDay
+                      dateISO={d}
+                      dayEntries={entries[d]}
+                      habits={habits}
+                      onDeleteOne={(habitId) => removeLog(d, habitId)}
+                      formatPrettyDate={formatPrettyDate}
+                      entryToDisplay={entryToDisplay}
+                      isLast={index === filteredHistory.length - 1}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
