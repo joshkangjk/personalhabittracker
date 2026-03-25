@@ -2,7 +2,7 @@
 import React from "react";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, ReferenceLine } from "recharts";
+import { ComposedChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Area, ReferenceLine } from "recharts";
 import { CheckCircle2 } from "lucide-react";
 
 import {
@@ -215,10 +215,12 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
         </div>
       ) : (
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          {/* 1. UPGRADED TO COMPOSED CHART */}
+          <ComposedChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={chartGradientId(gradientPrefix, habit?.id)} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.15} />
+                {/* 2. SLIGHTLY RICHER GRADIENT */}
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.0} />
               </linearGradient>
             </defs>
@@ -250,24 +252,20 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
               <ReferenceLine x={todayISO()} stroke="hsl(var(--primary))" strokeOpacity={0.2} strokeDasharray="4 4" />
             ) : null}
             
+            {/* 3. COMBINED AREA AND LINE WITH APPLE SPRING ANIMATION */}
             <Area
               type="monotone"
               dataKey="actualCum"
-              stroke="none"
+              stroke="hsl(var(--primary))"
+              strokeWidth={3}
               fill={`url(#${chartGradientId(gradientPrefix, habit?.id)})`}
-              isAnimationActive
+              activeDot={{ r: 6, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 3 }}
+              isAnimationActive={true}
+              animationDuration={1200}
+              animationEasing="ease-out"
             />
             
-            <Line 
-              type="monotone" 
-              dataKey="actualCum" 
-              dot={false} 
-              activeDot={{ r: 5, fill: "hsl(var(--primary))", stroke: "hsl(var(--background))", strokeWidth: 2 }} 
-              strokeWidth={2.5} 
-              stroke="hsl(var(--primary))" 
-              isAnimationActive 
-            />
-            
+            {/* 4. THE SECONDARY GOAL LINE */}
             {getYearlyGoal(habit) > 0 ? (
               <Line
                 type="monotone"
@@ -277,9 +275,12 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
                 strokeDasharray="4 4"
                 stroke="hsl(var(--muted-foreground))"
                 strokeOpacity={0.4}
+                isAnimationActive={true}
+                animationDuration={1200}
+                animationEasing="ease-out"
               />
             ) : null}
-          </LineChart>
+          </ComposedChart>
         </ResponsiveContainer>
       )}
     </div>
