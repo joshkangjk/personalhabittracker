@@ -1,162 +1,89 @@
-// src/components/HistoryDay.jsx
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Trash2, ChevronDown } from "lucide-react";
+import React from "react";
+import { CheckCircle2, Circle, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-export default function HistoryDay({
-  dateISO,
-  dayEntries,
-  habits,
-  onDeleteOne,
-  formatPrettyDate,
-  entryToDisplay,
-  isLast
-}) {
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingDelete, setPendingDelete] = useState(null);
-  const [expanded, setExpanded] = useState(false);
-
-  const items = Object.keys(dayEntries || {})
-    .map((hid) => {
-      const habit = habits.find((h) => h.id === hid);
-      return { hid, habit, entry: dayEntries[hid] };
-    })
-    .filter((x) => x.habit)
-    .sort((a, b) => habits.findIndex((h) => h.id === a.hid) - habits.findIndex((h) => h.id === b.hid));
-
-  if (items.length === 0) return null; 
+export default function HistoryDay({ dayData, isToday, formatNumberWithDecimals, habitDecimals }) {
+  const { dateStr, prettyDate, habits } = dayData;
+  
+  // Calculate completion percentage for the summary badge
+  const total = habits.length;
+  const completed = habits.filter(h => h.completed).length;
+  const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
-    <div className="flex gap-4 w-full">
+    <div className="relative mb-8 last:mb-0">
       
-      {/* 1. TIMELINE SPINE */}
-      <div className="flex flex-col items-center relative z-10 w-4 shrink-0">
-        <div 
-          className={`mt-4 h-2.5 w-2.5 rounded-full border-2 border-background shadow-sm transition-all duration-300 ${
-            expanded 
-              ? "bg-primary ring-4 ring-primary/20 scale-110" 
-              : "bg-muted-foreground/40 hover:bg-muted-foreground"
-          }`} 
-        />
-        {!isLast && (
-          <div className="w-px h-full bg-border/50 mt-2" />
+      {/* 1. THE STICKY APPLE-STYLE HEADER */}
+      {/* It sticks to the top of the screen as you scroll past the card */}
+      <div className="sticky top-14 z-20 py-2.5 mb-3 flex items-end justify-between bg-background/80 backdrop-blur-xl border-b border-border/20 -mx-2 px-2 sm:mx-0 sm:px-1">
+        <h3 className="text-[17px] font-semibold tracking-tight text-foreground flex items-center gap-2">
+          {isToday ? "Today" : prettyDate}
+          {isToday && (
+            <span className="bg-primary/10 text-primary text-[11px] uppercase tracking-wider font-bold px-2 py-0.5 rounded-full ml-1">
+              Live
+            </span>
+          )}
+        </h3>
+        
+        {/* Subtle Completion Badge */}
+        {total > 0 && (
+          <span className="text-[13px] font-medium text-muted-foreground">
+            {completed} of {total} • {percent}%
+          </span>
         )}
       </div>
 
-      {/* 2. TIMELINE CONTENT CARD */}
-      <div className="flex-1 pb-6">
-        <div className={`rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple transition-all duration-300 overflow-hidden ${
-          expanded 
-            ? "bg-background/80" 
-            : "hover:shadow-apple-hover hover:bg-background/80"
-        }`}>
-          
-          {/* Header (Clickable) */}
-          <div
-            className="flex items-center justify-between p-4 sm:p-6 cursor-pointer select-none group"
-            onClick={() => setExpanded((v) => !v)}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                setExpanded((v) => !v);
-              }
-            }}
-          >
-            <div className="space-y-0.5">
-              <div className="text-[15px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
-                {formatPrettyDate(dateISO)}
-              </div>
-              <div className="text-[13px] text-muted-foreground transition-colors">
-                {items.length} completed habit{items.length === 1 ? "" : "s"}
-              </div>
-            </div>
-            
-            <div className={`p-1.5 rounded-full transition-all duration-300 ${expanded ? "bg-primary/10 text-primary rotate-180" : "bg-transparent text-muted-foreground"}`}>
-              <ChevronDown className="h-4 w-4" />
-            </div>
+      {/* 2. THE EDGE-TO-EDGE DATA CARD */}
+      <div className="bg-background/70 backdrop-blur-[10px] shadow-apple rounded-2xl overflow-hidden border border-border/20">
+        
+        {total === 0 ? (
+          <div className="p-6 text-center text-[14px] text-muted-foreground">
+            No habits tracked on this day.
           </div>
+        ) : (
+          <div className="divide-y divide-border/30">
+            {habits.map((h) => {
+              const dec = habitDecimals({ type: h.type, goals: {} }); // Mock habit for decimal logic
+              const isDone = h.completed;
 
-          {/* Expanded Content Grid */}
-          <div 
-            className={`grid transition-all duration-300 ease-in-out ${
-              expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-            }`}
-          >
-            <div className="overflow-hidden">
-              <div className="px-4 pb-4 sm:px-6 sm:pb-6 space-y-1 pt-2">
-                {items.map(({ hid, habit, entry }) => (
-                  <div key={hid} className="group/item flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 p-4 sm:p-5 transition-all">
-                    
-                    <div className="flex items-center gap-3">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
-                      <div>
-                        <div className="text-[15px] font-medium text-foreground">{habit.name}</div>
-                        <div className="text-[13px] font-medium tabular-nums text-muted-foreground mt-0.5">
-                          {entryToDisplay(habit, entry)}
-                        </div>
-                      </div>
+              return (
+                <div 
+                  key={h.id} 
+                  className="group flex items-center justify-between gap-3 bg-transparent hover:bg-muted/30 p-4 sm:p-5 transition-colors"
+                >
+                  <div className="flex items-center gap-3.5 overflow-hidden">
+                    {/* Minimalist Status Icon */}
+                    <div className={`shrink-0 transition-colors ${isDone ? "text-green-500" : "text-muted-foreground/30"}`}>
+                      {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
                     </div>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-muted-foreground hover:bg-destructive/10 hover:text-destructive opacity-0 sm:group-hover/item:opacity-100 transition-opacity focus:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPendingDelete({ hid, name: habit.name });
-                        setConfirmOpen(true);
-                      }}
-                      title="Remove entry"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    
+                    {/* Habit Identity */}
+                    <div className="flex flex-col truncate">
+                      <span className={`text-[15px] font-medium truncate ${isDone ? "text-foreground" : "text-foreground/70"}`}>
+                        {h.name}
+                      </span>
+                    </div>
                   </div>
-                ))}
-              </div>
-            </div>
+
+                  {/* Value / Goal Display */}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="text-right">
+                      <span className={`text-[15px] font-semibold tabular-nums ${isDone ? "text-foreground" : "text-muted-foreground"}`}>
+                        {h.type === "checkbox" ? (isDone ? "Done" : "Missed") : formatNumberWithDecimals(h.value, dec)}
+                      </span>
+                      {h.type === "number" && (
+                        <span className="text-[12px] text-muted-foreground ml-1">
+                          / {formatNumberWithDecimals(h.goalValue, dec)} {h.unit}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        )}
       </div>
-      
-      {/* 3. DELETE CONFIRMATION DIALOG */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-md rounded-2xl">
-          <DialogHeader>
-            <DialogTitle>Remove entry?</DialogTitle>
-          </DialogHeader>
-          <div className="text-[13px] text-muted-foreground mt-1">
-            This will remove the log for <span className="font-semibold text-foreground">{pendingDelete?.name || "this habit"}</span> on{" "}
-            <span className="font-semibold text-foreground">{formatPrettyDate(dateISO)}</span>.
-          </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              variant="ghost"
-              className="rounded-full"
-              onClick={() => {
-                setConfirmOpen(false);
-                setPendingDelete(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              className="rounded-full shadow-sm"
-              onClick={() => {
-                if (pendingDelete?.hid) onDeleteOne(pendingDelete.hid);
-                setConfirmOpen(false);
-                setPendingDelete(null);
-              }}
-            >
-              Remove Log
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
       
     </div>
   );
