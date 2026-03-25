@@ -1,5 +1,5 @@
-import React from "react";
-import { CheckCircle2, Circle, Trash2 } from "lucide-react";
+import React, { useState } from "react";
+import { CheckCircle2, Circle, Trash2, ChevronRight } from "lucide-react";
 
 export default function HistoryDay({ 
   dateISO, 
@@ -10,64 +10,69 @@ export default function HistoryDay({
   entryToDisplay,
   isLast 
 }) {
-  // 1. Safety check: If there are no entries for this day, handle it gracefully
-  const entriesExist = dayEntries && Object.keys(dayEntries).length > 0;
-  
-  // 2. Format the date text using the helper function passed from the parent
-  const prettyDate = formatPrettyDate ? formatPrettyDate(dateISO) : dateISO;
+  // 1. The state to track if this specific day is expanded or closed
+  const [isOpen, setIsOpen] = useState(false);
 
-  // 3. Find only the habits that were actually logged on this specific day
+  const entriesExist = dayEntries && Object.keys(dayEntries).length > 0;
+  const prettyDate = formatPrettyDate ? formatPrettyDate(dateISO) : dateISO;
   const activeHabits = habits.filter(h => dayEntries && dayEntries[h.id] !== undefined);
   const totalLogged = activeHabits.length;
 
-  return (
-    <div className={`relative ${isLast ? "mb-0" : "mb-8"}`}>
-      
-      {/* THE STICKY APPLE-STYLE HEADER */}
-      <div className="sticky top-14 z-20 py-2.5 mb-3 flex items-end justify-between bg-background/80 backdrop-blur-xl border-b border-border/20 -mx-2 px-2 sm:mx-0 sm:px-1">
-        <h3 className="text-[17px] font-semibold tracking-tight text-foreground flex items-center gap-2">
-          {prettyDate}
-        </h3>
-        
-        {totalLogged > 0 && (
-          <span className="text-[13px] font-medium text-muted-foreground">
-            {totalLogged} logged
-          </span>
-        )}
-      </div>
+  // If there are no logs for this day, we can just skip rendering it entirely 
+  // to keep the history feed hyper-focused on actual activity.
+  if (!entriesExist || totalLogged === 0) return null;
 
-      {/* THE EDGE-TO-EDGE DATA CARD */}
-      <div className="bg-background/70 backdrop-blur-[10px] shadow-apple rounded-2xl overflow-hidden border border-border/20">
+  return (
+    <div className={`relative bg-background/70 backdrop-blur-[10px] shadow-apple rounded-2xl border border-border/20 overflow-hidden ${isLast ? "mb-0" : "mb-3"}`}>
+      
+      {/* --- 1. THE CLICKABLE HEADER (Summary) --- */}
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between p-4 sm:px-5 sm:py-4 hover:bg-muted/30 transition-colors focus-visible:outline-none focus-visible:bg-muted/30"
+      >
+        <div className="flex items-center gap-3">
+          {/* The Chevron smoothly rotates 90 degrees when opened */}
+          <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform duration-300 ease-out ${isOpen ? "rotate-90" : ""}`} />
+          <h3 className="text-[16px] font-semibold tracking-tight text-foreground">
+            {prettyDate}
+          </h3>
+        </div>
         
-        {!entriesExist ? (
-          <div className="p-6 text-center text-[14px] text-muted-foreground">
-            No habits tracked on this day.
-          </div>
-        ) : (
-          <div className="divide-y divide-border/30">
+        {/* Subtle pill showing how much was accomplished */}
+        <span className="text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1 rounded-full">
+          {totalLogged} logged
+        </span>
+      </button>
+
+      {/* --- 2. THE ANIMATED BODY (Dropdown Content) --- */}
+      {/* We use a CSS Grid trick here to animate height from 0 to auto beautifully */}
+      <div 
+        className={`grid transition-all duration-300 ease-out ${
+          isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+        }`}
+      >
+        <div className="overflow-hidden">
+          {/* The top border separates the header from the expanded list */}
+          <div className="divide-y divide-border/30 border-t border-border/20 bg-background/30">
             {activeHabits.map((h) => {
               const entry = dayEntries[h.id];
-              
-              // Determine if it was "successful" for the green checkmark
               const isDone = h.type === "checkbox" ? Boolean(entry?.value) : Number(entry?.value) > 0;
-              
-              // Use your app's built-in formatter for the number/text
               const displayValue = entryToDisplay ? entryToDisplay(h, entry) : entry?.value;
 
               return (
                 <div 
                   key={h.id} 
-                  className="group flex items-center justify-between gap-3 bg-transparent hover:bg-muted/30 p-4 sm:p-5 transition-colors"
+                  className="group flex items-center justify-between gap-3 p-4 sm:px-5 sm:py-3.5 transition-colors hover:bg-muted/20"
                 >
-                  <div className="flex items-center gap-3.5 overflow-hidden">
+                  <div className="flex items-center gap-3.5 overflow-hidden pl-2 sm:pl-8">
                     {/* Status Icon */}
                     <div className={`shrink-0 transition-colors ${isDone ? "text-green-500" : "text-muted-foreground/30"}`}>
-                      {isDone ? <CheckCircle2 className="h-5 w-5" /> : <Circle className="h-5 w-5" />}
+                      {isDone ? <CheckCircle2 className="h-[18px] w-[18px]" /> : <Circle className="h-[18px] w-[18px]" />}
                     </div>
                     
                     {/* Habit Name */}
                     <div className="flex flex-col truncate">
-                      <span className={`text-[15px] font-medium truncate ${isDone ? "text-foreground" : "text-foreground/70"}`}>
+                      <span className={`text-[14px] font-medium truncate ${isDone ? "text-foreground" : "text-foreground/70"}`}>
                         {h.name}
                       </span>
                     </div>
@@ -76,12 +81,12 @@ export default function HistoryDay({
                   {/* Right Side: Value and Hover-Delete */}
                   <div className="flex items-center gap-3 shrink-0">
                     <div className="text-right">
-                      <span className={`text-[15px] font-semibold tabular-nums ${isDone ? "text-foreground" : "text-muted-foreground"}`}>
+                      <span className={`text-[14px] font-semibold tabular-nums ${isDone ? "text-foreground" : "text-muted-foreground"}`}>
                         {displayValue}
                       </span>
                     </div>
                     
-                    {/* The Delete Button (Only appears on hover) */}
+                    {/* The Delete Button */}
                     <button 
                       onClick={() => onDeleteOne(h.id)}
                       className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-md transition-all"
@@ -94,7 +99,7 @@ export default function HistoryDay({
               );
             })}
           </div>
-        )}
+        </div>
       </div>
       
     </div>
