@@ -2,12 +2,21 @@ import React from "react";
 import { CheckCircle2, Circle, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export default function HistoryDay({ dayData, isToday, formatNumberWithDecimals, habitDecimals }) {
-  const { dateStr, prettyDate, habits } = dayData;
+// 1. Accept both 'day' and 'dayData' just in case, to match whatever your parent is sending
+export default function HistoryDay({ day, dayData, isToday, formatNumberWithDecimals, habitDecimals }) {
+  
+  // 2. Safely grab whichever one exists
+  const data = day || dayData;
+
+  // 3. Defensive return: If for some reason the data is completely missing, render nothing instead of crashing the app
+  if (!data) return null;
+
+  // 4. Now safely destructure
+  const { dateStr, prettyDate, habits } = data;
   
   // Calculate completion percentage for the summary badge
-  const total = habits.length;
-  const completed = habits.filter(h => h.completed).length;
+  const total = habits?.length || 0;
+  const completed = habits?.filter(h => h.completed).length || 0;
   const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
   return (
