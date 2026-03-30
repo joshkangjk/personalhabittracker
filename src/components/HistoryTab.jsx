@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { format } from "date-fns";
-import { CalendarX, Activity, CheckCircle2 } from "lucide-react";
+import { CalendarX, CheckCircle2 } from "lucide-react"; // Removed Activity icon
 import CalendarGrid from "./CalendarGrid";
 import HistoryDay from "./HistoryDay";
 import { formatPrettyDate } from "../lib/helpers";
@@ -13,12 +13,7 @@ export default function HistoryTab({ entries, habits, removeLog }) {
   const selectedEntries = entries[selectedDate] || {};
   const hasLogs = Object.keys(selectedEntries).length > 0;
   
-  // Monthly Intensity Calculation
-  const currentMonthStr = format(viewDate, "yyyy-MM");
-  const monthlyLogs = Object.keys(entries).filter(d => d.startsWith(currentMonthStr));
-  const totalPossible = monthlyLogs.length * habits.length;
-  const totalCompleted = monthlyLogs.reduce((acc, date) => acc + Object.keys(entries[date]).length, 0);
-  const monthlyRate = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
+  // Removed the monthly math calculations from here
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start min-h-[600px] animate-in fade-in duration-700">
@@ -41,19 +36,8 @@ export default function HistoryTab({ entries, habits, removeLog }) {
             onSelectDate={setSelectedDate}
           />
         </div>
-
-        {/* Monthly Intensity with Glass Effect */}
-        <div className="bg-primary/10 backdrop-blur-md rounded-2xl border border-primary/20 p-4 flex items-center gap-4">
-          <div className="p-2.5 bg-primary/20 rounded-xl shadow-sm">
-            <Activity className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold text-primary uppercase tracking-widest">Monthly Intensity</p>
-            <p className="text-[18px] font-bold text-foreground leading-tight">
-              {monthlyRate}% <span className="text-[13px] font-medium text-muted-foreground ml-1">completion</span>
-            </p>
-          </div>
-        </div>
+        
+        {/* Removed the Monthly Intensity box from here */}
       </div>
 
       {/* RIGHT COLUMN: THE DETAIL INSPECTOR */}
