@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { supabase } from "../supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2 } from "lucide-react";
+import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -34,23 +34,37 @@ export default function LoginScreen() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-background to-muted/15 text-foreground flex items-center justify-center p-6 font-sans antialiased">
+    // Removed the solid background gradient so the index.html animated radial background shines through
+    <div className="min-h-screen w-full flex items-center justify-center p-6 font-sans antialiased selection:bg-primary/20 relative z-10">
+      
       <form
-        className="w-full max-w-sm rounded-3xl bg-background/60 backdrop-blur shadow-sm p-6 md:p-8 space-y-6 md:space-y-8"
+        className="glass-card w-full max-w-sm rounded-[32px] p-8 sm:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-2xl border-white/20 relative overflow-hidden"
         onSubmit={(e) => {
           e.preventDefault();
           sendLink();
         }}
       >
-        <div className="space-y-1">
-          <div className="text-[17px] font-semibold tracking-tight">Sign in</div>
-          <div className="text-[13px] text-muted-foreground">
-            {sent ? "Check your email for the login link." : "Enter your email to get a magic link."}
+        {/* Decorative subtle glow inside the card */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
+
+        {/* HEADER SECTION */}
+        <div className="flex flex-col items-center text-center space-y-4 relative z-10">
+          <div className="h-16 w-16 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center shadow-inner border border-primary/20 rotate-3 transition-transform hover:rotate-0 duration-300">
+             <Sparkles className="h-8 w-8 text-primary" />
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="text-[24px] font-bold tracking-tight text-foreground">Habit Tracker</h1>
+            <p className="text-[14px] text-muted-foreground max-w-[240px] leading-relaxed mx-auto">
+              {sent ? "Check your email for the magic link." : "Enter your email to sign in or create an account."}
+            </p>
           </div>
         </div>
 
-        <div className="space-y-2">
-          <div className="text-[13px] text-muted-foreground">Email</div>
+        {/* INPUT SECTION */}
+        <div className="space-y-3 relative z-10">
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">
+            Email Address
+          </div>
           <Input
             type="email"
             inputMode="email"
@@ -62,40 +76,46 @@ export default function LoginScreen() {
               if (errorMsg) setErrorMsg("");
               if (sent) setSent(false);
             }}
-            className="text-[15px] rounded-2xl bg-background/60 shadow-sm border-0 focus-visible:ring-2 focus-visible:ring-muted/30"
+            // iOS style indented input
+            className="h-14 text-[15px] px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/50"
           />
         </div>
 
-        <Button
-          type="submit"
-          variant="secondary"
-          className="w-full rounded-2xl shadow-sm"
-          disabled={!email.trim() || sending}
-        >
-          {sending ? (
-            <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Sending
-            </span>
-          ) : sent ? (
-            <span className="inline-flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4" />
-              Link sent
-            </span>
-          ) : (
-            "Send link"
+        {/* SUBMIT BUTTON */}
+        <div className="space-y-4 relative z-10">
+          <Button
+            type="submit"
+            className="w-full h-14 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold text-[15px]"
+            disabled={!email.trim() || sending}
+          >
+            {sending ? (
+              <span className="inline-flex items-center gap-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Sending...
+              </span>
+            ) : sent ? (
+              <span className="inline-flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5" />
+                Link Sent
+              </span>
+            ) : (
+              "Continue with Email"
+            )}
+          </Button>
+
+          {/* MESSAGES */}
+          {errorMsg && (
+            <div className="text-[13px] font-medium text-destructive text-center bg-destructive/10 py-2 px-3 rounded-xl border border-destructive/10 animate-in fade-in duration-300">
+              {errorMsg}
+            </div>
           )}
-        </Button>
 
-        {errorMsg ? (
-          <div className="text-[13px] text-destructive">{errorMsg}</div>
-        ) : null}
-
-        {sent ? (
-          <div className="text-[13px] text-muted-foreground">
-            You can close this page after opening the link from your email.
-          </div>
-        ) : null}
+          {sent && (
+            <div className="text-[13px] font-medium text-muted-foreground text-center animate-in fade-in duration-300">
+              You can safely close this window.
+            </div>
+          )}
+        </div>
       </form>
     </div>
   );
