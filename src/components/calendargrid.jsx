@@ -90,7 +90,7 @@ export default function CalendarGrid({
               onClick={() => isCurrentMonth && onSelectDate(dateISO)}
               className={`
                 relative aspect-square rounded-xl transition-all duration-300 flex items-center justify-center text-[13px] font-semibold
-                ${!isCurrentMonth ? "opacity-0 pointer-events-none" : "opacity-100"}
+                ${!isCurrentMonth ? "opacity-20 pointer-events-none" : "opacity-100"}
                 ${isSelected 
                   ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-105 z-10 shadow-lg" 
                   : "hover:bg-white/10 active:scale-95"
