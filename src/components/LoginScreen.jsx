@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -133,16 +133,13 @@ export default function LoginScreen() {
         <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
 
         {/* HEADER SECTION */}
-        <div className="flex flex-col items-center text-center space-y-4 relative z-10">
-          <div className="h-16 w-16 bg-primary/10 dark:bg-primary/20 rounded-2xl flex items-center justify-center shadow-inner border border-primary/20 rotate-3 transition-transform hover:rotate-0 duration-300">
-             <Sparkles className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-1.5">
-            <h1 className="text-[24px] font-bold tracking-tight text-foreground">Habit Tracker</h1>
-            <p className="text-[14px] text-muted-foreground max-w-[240px] leading-relaxed mx-auto">
-              {sent ? "Enter the 6-digit code sent to your email." : "Enter your email to sign in or create an account."}
-            </p>
-          </div>
+        <div className="flex flex-col items-center text-center space-y-2 relative z-10 pb-2">
+          <h1 className="text-3xl font-extrabold tracking-tight text-foreground">
+            Habit Tracker
+          </h1>
+          <p className="text-[15px] text-muted-foreground max-w-[260px] leading-relaxed mx-auto">
+            {sent ? "Enter the 6-digit code sent to your email." : "Enter your email to sign in or create an account."}
+          </p>
         </div>
 
         {/* INPUT SECTION */}
