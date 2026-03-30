@@ -7,24 +7,17 @@ import { formatPrettyDate } from "../lib/helpers";
 import { entryToDisplay } from "../lib/stats";
 
 export default function HistoryTab({ entries, habits, removeLog }) {
-  // 1. STATE MANAGEMENT
-  // viewDate: Controls the calendar's current month view
   const [viewDate, setViewDate] = useState(new Date());
-  
-  // selectedDate: The ISO string (YYYY-MM-DD) of the day clicked in the calendar
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  // 2. DATA CALCULATIONS
   const selectedEntries = entries[selectedDate] || {};
   const hasLogs = Object.keys(selectedEntries).length > 0;
   
-  // Calculate monthly completion for the "Quick Stats"
+  // Monthly Intensity Calculation
   const currentMonthStr = format(viewDate, "yyyy-MM");
   const monthlyLogs = Object.keys(entries).filter(d => d.startsWith(currentMonthStr));
   const totalPossible = monthlyLogs.length * habits.length;
-  const totalCompleted = monthlyLogs.reduce((acc, date) => {
-    return acc + Object.keys(entries[date]).length;
-  }, 0);
+  const totalCompleted = monthlyLogs.reduce((acc, date) => acc + Object.keys(entries[date]).length, 0);
   const monthlyRate = totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0;
 
   return (
@@ -32,13 +25,13 @@ export default function HistoryTab({ entries, habits, removeLog }) {
       
       {/* LEFT COLUMN: THE NAVIGATOR */}
       <div className="w-full lg:w-[340px] flex flex-col gap-6 shrink-0">
-        <div>
+        <div className="px-1">
           <h2 className="text-[28px] font-bold tracking-tight text-foreground">History</h2>
           <p className="text-[14px] text-muted-foreground">Track your long-term consistency.</p>
         </div>
 
-        {/* Glass Calendar Card */}
-        <div className="bg-white/5 backdrop-blur-md rounded-[32px] border border-white/10 p-5 shadow-apple transition-all hover:border-white/20">
+        {/* Applied .glass-card for the Calendar */}
+        <div className="glass-card rounded-[32px] p-5 transition-all hover:ring-1 hover:ring-white/30">
           <CalendarGrid 
             viewDate={viewDate}
             setViewDate={setViewDate}
@@ -49,30 +42,33 @@ export default function HistoryTab({ entries, habits, removeLog }) {
           />
         </div>
 
-        {/* Quick Month Stats Card */}
-        <div className="bg-primary/5 rounded-2xl border border-primary/10 p-4 flex items-center gap-4">
-          <div className="p-2.5 bg-primary/10 rounded-xl">
+        {/* Monthly Intensity with Glass Effect */}
+        <div className="bg-primary/10 backdrop-blur-md rounded-2xl border border-primary/20 p-4 flex items-center gap-4">
+          <div className="p-2.5 bg-primary/20 rounded-xl shadow-sm">
             <Activity className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <p className="text-[11px] font-bold text-primary uppercase tracking-wider">Monthly Intensity</p>
-            <p className="text-[18px] font-bold text-foreground">{monthlyRate}% <span className="text-[13px] font-medium text-muted-foreground ml-1">completion</span></p>
+            <p className="text-[11px] font-bold text-primary uppercase tracking-widest">Monthly Intensity</p>
+            <p className="text-[18px] font-bold text-foreground leading-tight">
+              {monthlyRate}% <span className="text-[13px] font-medium text-muted-foreground ml-1">completion</span>
+            </p>
           </div>
         </div>
       </div>
 
       {/* RIGHT COLUMN: THE DETAIL INSPECTOR */}
       <div className="flex-1 w-full flex flex-col gap-6">
-        <div className="flex flex-col">
+        <div className="flex flex-col px-1">
           <h2 className="text-[22px] font-bold tracking-tight text-foreground">
             {format(new Date(selectedDate + 'T00:00:00'), "EEEE, MMMM do")}
           </h2>
-          <p className="text-[13px] text-muted-foreground">Detailed activity log</p>
+          <p className="text-[13px] text-muted-foreground">Daily activity details</p>
         </div>
 
-        <div className="flex-1 bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 p-6 shadow-apple min-h-[450px] relative overflow-hidden">
+        {/* Applied .glass-card and .animate-detail-view */}
+        <div className="glass-card flex-1 rounded-[32px] p-6 min-h-[450px] relative overflow-hidden">
           {hasLogs ? (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-500 ease-out">
+            <div className="animate-detail-view">
               <HistoryDay
                 dateISO={selectedDate}
                 dayEntries={selectedEntries}
@@ -83,20 +79,19 @@ export default function HistoryTab({ entries, habits, removeLog }) {
                 isLast={true}
               />
               
-              {/* Optional "Completed All" Badge */}
               {Object.keys(selectedEntries).length === habits.length && (
-                <div className="mt-8 flex items-center gap-2 text-primary font-medium text-[14px] bg-primary/10 w-fit px-4 py-2 rounded-full">
+                <div className="mt-8 flex items-center gap-2 text-primary font-bold text-[13px] bg-primary/10 w-fit px-4 py-2 rounded-full border border-primary/10">
                   <CheckCircle2 className="h-4 w-4" />
-                  Perfect Day!
+                  PERFECT DAY
                 </div>
               )}
             </div>
           ) : (
-            /* EMPTY STATE */
+            /* EMPTY STATE with Depth */
             <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-in fade-in zoom-in-95 duration-700">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-primary/10 blur-3xl rounded-full" />
-                <div className="relative bg-white/5 border border-white/10 p-6 rounded-3xl shadow-inner">
+                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full opacity-50" />
+                <div className="relative glass-card p-6 rounded-3xl border-white/20 shadow-inner">
                   <CalendarX className="h-12 w-12 text-muted-foreground/30" />
                 </div>
               </div>
@@ -112,7 +107,7 @@ export default function HistoryTab({ entries, habits, removeLog }) {
                   setSelectedDate(today);
                   setViewDate(new Date());
                 }}
-                className="mt-8 px-6 py-2 rounded-full bg-white/5 border border-white/10 text-[13px] font-semibold text-foreground hover:bg-white/10 transition-all active:scale-95"
+                className="mt-8 px-6 py-2 rounded-full bg-primary text-[13px] font-bold text-white shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
               >
                 Jump to Today
               </button>
