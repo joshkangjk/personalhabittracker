@@ -136,3 +136,7 @@ body {
     transform: translateY(0);
   }
 }
+
+:root {
+  --primary-rgb: 59, 130, 246; /* Replace with your primary color's RGB */
+}
