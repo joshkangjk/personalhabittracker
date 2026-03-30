@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +93,12 @@ export default function LoginScreen() {
     }
   }
 
+  useEffect(() => {
+    if (otp.length === 6) {
+      verifyOtp();
+    }
+  }, [otp]);
+
   return (
     // Removed the solid background gradient so the index.html animated radial background shines through
     <div className="min-h-screen w-full flex items-center justify-center p-6 font-sans antialiased selection:bg-primary/20 relative z-10">
@@ -168,30 +174,35 @@ export default function LoginScreen() {
             </div>
           )}
         </div>
-
-        {/* SUBMIT BUTTON */}
+        
+        {/* SUBMIT BUTTON & LOADING STATES */}
         <div className="space-y-4 relative z-10">
-          <Button
-            type="submit"
-            className="w-full h-14 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold text-[15px]"
-            disabled={!email.trim() || sending || verifying}
-          >
-            {sending ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Sending...
-              </span>
-            ) : verifying ? (
-              <span className="inline-flex items-center gap-2">
-                <Loader2 className="h-5 w-5 animate-spin" />
-                Verifying...
-              </span>
-            ) : sent ? (
-              "Verify Code"
-            ) : (
-              "Continue with Email"
-            )}
-          </Button>
+          
+          {/* 1. Only show the Continue button BEFORE the email is sent */}
+          {!sent && (
+            <Button
+              type="submit"
+              className="w-full h-14 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold text-[15px]"
+              disabled={!email.trim() || sending}
+            >
+              {sending ? (
+                <span className="inline-flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Sending...
+                </span>
+              ) : (
+                "Continue with Email"
+              )}
+            </Button>
+          )}
+
+          {/* 2. Show a standalone loading spinner when auto-submitting the OTP */}
+          {sent && verifying && (
+            <div className="flex justify-center items-center py-3 text-muted-foreground animate-in fade-in duration-300">
+              <Loader2 className="h-5 w-5 animate-spin mr-2 text-primary" />
+              <span className="text-[14px] font-medium">Verifying code...</span>
+            </div>
+          )}
 
           {/* MESSAGES */}
           {errorMsg && (
@@ -200,7 +211,7 @@ export default function LoginScreen() {
             </div>
           )}
 
-          {sent && (
+          {sent && !verifying && (
             <div className="text-[13px] font-medium text-muted-foreground text-center animate-in fade-in duration-300">
               Enter the code above to finish signing in.
             </div>
