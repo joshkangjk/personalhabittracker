@@ -1,5 +1,5 @@
 // src/hooks/useHabitData.js
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react"; // Added useRef
 import { supabase } from "../supabaseClient";
 import { todayISO, clampNumber, countDecimalsFromValue, normalizeGoals, uuid } from "../lib/helpers";
 import { setEntry, deleteEntry } from "../lib/stats";
@@ -80,6 +80,8 @@ export function useHabitData() {
 
   const selectedYear = state.ui.selectedYear;
 
+  const loadedYearsRef = useRef(new Set());
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data?.session || null));
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, nextSession) => {
@@ -96,13 +98,33 @@ export function useHabitData() {
     let cancelled = false;
     async function loadCloud() {
       if (!session?.user?.id) return;
+
+      // CACHE HIT: If we already fetched this year, skip the network request entirely!
+      if (loadedYearsRef.current.has(selectedYear)) {
+        setCloudReady(true);
+        return; 
+      }
+
       setCloudError("");
       setCloudReady(false);
       const userId = session.user.id;
+      
       try {
         const { habitsNext, entriesNext } = await loadCloudForYear({ userId, year: selectedYear });
         if (!cancelled) {
-          setState((s) => ensureStateShape({ ...s, habits: habitsNext, entries: entriesNext }));
+          setState((s) => {
+            // DEEP MERGE: Instead of replacing the entries, we merge them.
+            // Now, 2025 and 2026 data can live in memory simultaneously.
+            const mergedEntries = { ...(s.entries || {}) };
+            for (const [date, habitLogs] of Object.entries(entriesNext)) {
+              mergedEntries[date] = habitLogs;
+            }
+            
+            return ensureStateShape({ ...s, habits: habitsNext, entries: mergedEntries });
+          });
+          
+          // Mark this year as successfully cached
+          loadedYearsRef.current.add(selectedYear); 
           setCloudReady(true);
         }
       } catch (err) {
@@ -113,9 +135,7 @@ export function useHabitData() {
       }
     }
     loadCloud();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [session?.user?.id, selectedYear]);
 
   const updateHabit = useCallback(async (habitId, patch) => {

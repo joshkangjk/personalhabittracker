@@ -101,3 +101,18 @@ export async function loadCloudForYear({ userId, year }) {
     entriesNext: entriesFromRows(entriesRes.data || []),
   };
 }
+
+// Add this to the end of src/services/habitService.js
+export async function fetchCurrentStreak(userId, habitId) {
+  const { data, error } = await supabase.rpc('get_habit_streak', {
+    p_user_id: userId,
+    p_habit_id: habitId
+  });
+
+  if (error) {
+    console.error("Error fetching streak:", error.message);
+    return 0;
+  }
+  
+  return data || 0;
+}
