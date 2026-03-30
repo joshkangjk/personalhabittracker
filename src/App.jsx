@@ -138,16 +138,6 @@ export default function HabitTrackerMVP() {
     supabase.auth.signOut();
   }, []);
 
-  const handleMobileExport = useCallback(() => {
-    exportJSON();
-    setMobileMenuOpen(false);
-  }, [exportJSON]);
-
-  const handleMobileSignOut = useCallback(() => {
-    setMobileMenuOpen(false);
-    supabase.auth.signOut();
-  }, []);
-
   const handleActiveDateChange = useCallback((e) => {
     setActiveDate(e.target.value);
   }, [setActiveDate]);
@@ -254,7 +244,7 @@ export default function HabitTrackerMVP() {
           {/* RIGHT SIDE: Primary Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
             
-            {/* Desktop Share Button (Hidden on tiny mobile screens) */}
+            {/* Desktop Share Button */}
             <div className="hidden sm:flex items-center gap-3">
               <ShareStatus shareError={shareError} shareOk={shareOk} />
               <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2 rounded-full px-5 shadow-none bg-primary/10 text-primary hover:bg-primary/20 font-medium transition-all" disabled={shareBusy}>
@@ -262,55 +252,64 @@ export default function HabitTrackerMVP() {
               </Button>
             </div>
 
-            {/* UNIFIED SETTINGS MODAL */}
+            {/* UPGRADED SETTINGS MODAL */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95">
                   <SettingsIcon className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-sm rounded-2xl p-6">
-                <DialogHeader className="pb-2">
-                  <DialogTitle className="text-[17px] font-semibold tracking-tight text-center">Settings</DialogTitle>
+              
+              {/* Glassified Modal Content */}
+              <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden">
+                {/* Subtle Ambient Glow inside the modal */}
+                <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
+                
+                <DialogHeader className="pb-4 relative z-10">
+                  <DialogTitle className="text-[22px] font-bold tracking-tight text-center">Settings</DialogTitle>
                 </DialogHeader>
 
-                <div className="grid gap-6">
+                <div className="grid gap-6 relative z-10">
                   
                   {/* Section: Appearance */}
-                  <div className="space-y-2.5">
-                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Appearance</h3>
+                  <div className="space-y-3">
+                    <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Appearance</h3>
                     <Button 
                       onClick={toggleTheme} 
                       variant="ghost" 
-                      className="w-full justify-between rounded-xl h-12 px-4 bg-muted/40 hover:bg-muted/60 text-[15px] font-medium shadow-none transition-all"
+                      className="w-full justify-between rounded-2xl h-14 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5 shadow-inner text-[15px] font-semibold transition-all active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-3">
-                        {theme === "dark" ? <Moon className="h-4 w-4 text-muted-foreground" /> : <Sun className="h-4 w-4 text-muted-foreground" />}
+                        <div className="p-2 rounded-xl bg-background shadow-sm">
+                          {theme === "dark" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
+                        </div>
                         Theme
                       </div>
-                      <span className="text-muted-foreground text-[13px] font-normal">{theme === "dark" ? "Dark mode" : "Light mode"}</span>
+                      <span className="text-muted-foreground text-[13px] font-medium bg-background px-3 py-1 rounded-lg shadow-sm border border-border/50">
+                        {theme === "dark" ? "Dark" : "Light"}
+                      </span>
                     </Button>
                   </div>
 
                   {/* Section: Data & Time */}
-                  <div className="space-y-2.5">
-                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Data</h3>
-                    <div className="flex items-center justify-between rounded-xl bg-muted/40 px-4 h-12">
-                      <span className="text-[15px] font-medium">Tracking Year</span>
+                  <div className="space-y-3">
+                    <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Data</h3>
+                    <div className="flex items-center justify-between rounded-2xl bg-black/5 dark:bg-white/5 px-5 h-14 border border-black/5 dark:border-white/5 shadow-inner">
+                      <span className="text-[15px] font-semibold">Tracking Year</span>
                       <YearPicker
                         value={selectedYear}
                         onChange={handleYearChange}
                         options={yearOptions}
-                        triggerClassName="h-8 rounded-lg bg-background/80 border-0 shadow-sm focus:ring-0 text-[13px] font-medium"
+                        triggerClassName="h-8 rounded-lg bg-background/80 border border-border/50 shadow-sm focus:ring-0 text-[13px] font-medium"
                         labelClassName="hidden"
                       />
                     </div>
                   </div>
 
                   {/* Section: Mobile Share (Only visible on phones) */}
-                  <div className="sm:hidden space-y-2.5">
-                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Share</h3>
-                    <Button onClick={handleCreateShareLink} variant="secondary" className="w-full gap-2 rounded-xl h-12 text-[15px] font-medium shadow-none bg-primary/10 text-primary hover:bg-primary/20 transition-all" disabled={shareBusy}>
+                  <div className="sm:hidden space-y-3">
+                    <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Share</h3>
+                    <Button onClick={handleCreateShareLink} variant="secondary" className="w-full gap-2 rounded-2xl h-14 text-[15px] font-bold shadow-inner border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-[0.98]" disabled={shareBusy}>
                       {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share Public Link
                     </Button>
                     <div className="flex justify-center pt-1">
@@ -319,13 +318,13 @@ export default function HabitTrackerMVP() {
                   </div>
 
                   {/* Section: Account */}
-                  <div className="space-y-2.5">
-                    <h3 className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider px-1">Account</h3>
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Account</h3>
                     <div className="grid grid-cols-2 gap-3">
-                      <Button onClick={() => { exportJSON(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-xl h-11 text-[13px] bg-muted/40 hover:bg-muted/60 shadow-none">
+                      <Button onClick={() => { exportJSON(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-2xl h-12 text-[13px] font-bold bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5 shadow-inner transition-all active:scale-95">
                         <Download className="h-4 w-4" /> Export Data
                       </Button>
-                      <Button onClick={() => { handleSignOut(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-xl h-11 text-[13px] bg-destructive/10 text-destructive hover:bg-destructive/20 hover:text-destructive shadow-none">
+                      <Button onClick={() => { handleSignOut(); setSettingsOpen(false); }} variant="ghost" className="gap-2 rounded-2xl h-12 text-[13px] font-bold bg-destructive/10 text-destructive hover:bg-destructive hover:text-white border border-destructive/10 transition-all active:scale-95">
                         <LogOut className="h-4 w-4" /> Sign Out
                       </Button>
                     </div>
@@ -337,68 +336,73 @@ export default function HabitTrackerMVP() {
           </div>
         </header>
 
-        <Tabs defaultValue="log" className="w-full">
-          <TabsList className="sticky top-2 z-10 backdrop-blur-md grid w-full grid-cols-3 rounded-full bg-muted/50 p-1 shadow-inner">
+        <Tabs defaultValue="log" className="w-full flex flex-col items-center mt-6 sm:mt-8">
+          
+          {/* FLOATING NAVIGATION PILL ("Dynamic Island" style) */}
+          <TabsList className="sticky top-6 z-50 glass-card rounded-full p-1.5 shadow-2xl shadow-black/10 dark:shadow-black/40 border-white/20 mb-8 flex w-fit min-w-[340px] max-w-md transition-all">
             <TabsTrigger
               value="log"
-              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
             >
               Daily Log
             </TabsTrigger>
             <TabsTrigger
               value="dashboard"
-              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
             >
               Dashboard
             </TabsTrigger>
             <TabsTrigger
               value="history"
-              className="rounded-full text-[13px] font-medium transition-all duration-200 ease-in-out data-[state=active]:bg-background data-[state=active]:shadow-sm"
+              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
             >
               History
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="log" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-            <DailyLogTab
-              habits={state.habits}
-              entries={state.entries}
-              activeDate={activeDate}
-              handleActiveDateChange={handleActiveDateChange}
-              addHabit={addHabit}
-              isMobile={isMobile}
-              getHabitRowHandlers={getHabitRowHandlers}
-              getHabitDnDProps={getHabitDnDProps}
-            />
-          </TabsContent>
+          {/* Wrapper to ensure content takes full width while the pill stays centered */}
+          <div className="w-full">
+            <TabsContent value="log" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+              <DailyLogTab
+                habits={state.habits}
+                entries={state.entries}
+                activeDate={activeDate}
+                handleActiveDateChange={handleActiveDateChange}
+                addHabit={addHabit}
+                isMobile={isMobile}
+                getHabitRowHandlers={getHabitRowHandlers}
+                getHabitDnDProps={getHabitDnDProps}
+              />
+            </TabsContent>
 
-          <TabsContent value="dashboard" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-            <DashboardTab
-              dashboardSummaryMode={dashboardSummaryMode}
-              setDashboardSummaryMode={setDashboardSummaryMode}
-              dashboardMonth={dashboardMonth}
-              setDashboardMonth={setDashboardMonth}
-              dashboardSummaryLabel={dashboardSummaryLabel}
-              dashboardSummaryItems={dashboardSummaryItems}
-              effectiveFocusedHabitId={effectiveFocusedHabitId}
-              setFocusedHabitId={setFocusedHabitId}
-              focusedHabit={focusedHabit}
-              focusedStats={focusedStats}
-              focusedSeries={focusedSeries}
-              selectedYear={selectedYear}
-            />
-          </TabsContent>
+            <TabsContent value="dashboard" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+              <DashboardTab
+                dashboardSummaryMode={dashboardSummaryMode}
+                setDashboardSummaryMode={setDashboardSummaryMode}
+                dashboardMonth={dashboardMonth}
+                setDashboardMonth={setDashboardMonth}
+                dashboardSummaryLabel={dashboardSummaryLabel}
+                dashboardSummaryItems={dashboardSummaryItems}
+                effectiveFocusedHabitId={effectiveFocusedHabitId}
+                setFocusedHabitId={setFocusedHabitId}
+                focusedHabit={focusedHabit}
+                focusedStats={focusedStats}
+                focusedSeries={focusedSeries}
+                selectedYear={selectedYear}
+              />
+            </TabsContent>
 
-          <TabsContent value="history" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-            <HistoryTab
-              historyMonth={historyMonth}
-              setHistoryMonth={setHistoryMonth}
-              filteredHistory={filteredHistory}
-              entries={state.entries}
-              habits={state.habits}
-              removeLog={removeLog}
-            />
-          </TabsContent>
+            <TabsContent value="history" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
+              <HistoryTab
+                historyMonth={historyMonth}
+                setHistoryMonth={setHistoryMonth}
+                filteredHistory={filteredHistory}
+                entries={state.entries}
+                habits={state.habits}
+                removeLog={removeLog}
+              />
+            </TabsContent>
+          </div>
         </Tabs>
       </div>
     </div>
