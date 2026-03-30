@@ -1,11 +1,9 @@
 // src/components/PublicView.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { supabase } from "../supabaseClient";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronDown, History, BarChart3, Lock, Sun, Moon } from "lucide-react";
+import { BarChart3, Lock, Sun, Moon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { formatPrettyDate } from "../lib/helpers";
 import {
   listDatesInYear,
@@ -28,370 +26,281 @@ export default function PublicView({ token }) {
   const [error, setError] = useState("");
   const [publicState, setPublicState] = useState({ habits: [], entries: {} });
   const [focusedHabitId, setFocusedHabitId] = useState("");
-  const [expandedDates, setExpandedDates] = useState(() => ({}));
 
-  const habits = useMemo(() => publicState.habits || [], [publicState.habits]);
-  const entries = useMemo(() => publicState.entries || {}, [publicState.entries]);
+  useEffect(() => {
+    async function fetchPublicData() {
+      try {
+        const { data: profileData, error: profileError } = await supabase
+          .from("public_profiles")
+          .select("user_id, is_enabled")
+          .eq("share_token", token)
+          .single();
+
+        if (profileError || !profileData?.is_enabled) {
+          throw new Error("This shared link is invalid or has been disabled by the owner.");
+        }
+
+        const userId = profileData.user_id;
+
+        const { data: habitsData, error: habitsError } = await supabase
+          .from("habits")
+          .select("id, name, type, unit, decimals, goals, sort_index")
+          .eq("user_id", userId)
+          .order("sort_index", { ascending: true });
+
+        if (habitsError) throw new Error("Failed to load habits.");
+
+        const { data: entriesData, error: entriesError } = await supabase
+          .from("entries")
+          .select("date_iso, habit_id, value")
+          .eq("user_id", userId)
+          .gte("date_iso", `${year}-01-01`)
+          .lte("date_iso", `${year}-12-31`);
+
+        if (entriesError) throw new Error("Failed to load entries.");
+
+        const parsedHabits = habitsData.map(normalizePublicHabit);
+        const parsedEntries = {};
+        entriesData.forEach((e) => {
+          if (!parsedEntries[e.date_iso]) parsedEntries[e.date_iso] = {};
+          parsedEntries[e.date_iso][e.habit_id] = e.value;
+        });
+
+        setPublicState({ habits: parsedHabits, entries: parsedEntries });
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPublicData();
+  }, [token, year]);
+
+  const selectedYear = year;
+  const datesInYear = useMemo(() => listDatesInYear(publicState.entries, selectedYear), [publicState.entries, selectedYear]);
 
   const yearSummary = useMemo(() => {
-    const out = (habits || []).map((h) => ({ habit: h, stats: habitStats(h, entries, year) }));
+    const out = publicState.habits.map((h) => {
+      const st = habitStats(h, publicState.entries, selectedYear);
+      return { habit: h, stats: st };
+    });
     out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
     return out;
-  }, [habits, entries, year]);
+  }, [publicState.habits, publicState.entries, selectedYear]);
 
   const monthSummary = useMemo(() => {
-    const out = (habits || []).map((h) => ({ habit: h, stats: habitStatsMonth(h, entries, year, dashboardMonth) }));
+    const out = publicState.habits.map((h) => {
+      const st = habitStatsMonth(h, publicState.entries, selectedYear, dashboardMonth);
+      return { habit: h, stats: st };
+    });
     out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
     return out;
-  }, [habits, entries, year, dashboardMonth]);
+  }, [publicState.habits, publicState.entries, selectedYear, dashboardMonth]);
 
   const dashboardSummaryItems = dashboardSummaryMode === "month" ? monthSummary : yearSummary;
-  const dashboardSummaryLabel = dashboardSummaryMode === "month" ? `${dashboardMonth}-${year}` : `${year}`;
+  const dashboardSummaryLabel = dashboardSummaryMode === "month" ? `${dashboardMonth}-${selectedYear}` : `${selectedYear}`;
 
-  const effectiveFocusedHabitId = focusedHabitId || habits[0]?.id || "";
+  const effectiveFocusedHabitId = focusedHabitId || publicState.habits[0]?.id || "";
 
   const focusedHabit = useMemo(
-    () => (habits || []).find((h) => h.id === effectiveFocusedHabitId) || habits[0],
-    [habits, effectiveFocusedHabitId]
+    () => publicState.habits.find((h) => h.id === effectiveFocusedHabitId) || publicState.habits[0],
+    [publicState.habits, effectiveFocusedHabitId]
   );
 
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
     if (dashboardSummaryMode === "month") {
-      return buildHabitSeriesMonth(focusedHabit, entries, year, dashboardMonth);
+      return buildHabitSeriesMonth(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
     }
-    return buildHabitSeries(focusedHabit, entries, year);
-  }, [focusedHabit, entries, year, dashboardMonth, dashboardSummaryMode]);
+    return buildHabitSeries(focusedHabit, publicState.entries, selectedYear);
+  }, [focusedHabit, publicState.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
 
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
     if (dashboardSummaryMode === "month") {
-      return habitStatsMonth(focusedHabit, entries, year, dashboardMonth);
+      return habitStatsMonth(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
     }
-    return habitStats(focusedHabit, entries, year);
-  }, [focusedHabit, entries, year, dashboardMonth, dashboardSummaryMode]);
+    return habitStats(focusedHabit, publicState.entries, selectedYear);
+  }, [focusedHabit, publicState.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
 
-  const recentDates = useMemo(() => {
-    const all = listDatesInYear(entries, year);
-    return all.slice(0, 30);
-  }, [entries, year]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-
-      const res = await supabase.rpc("get_public_year_data", {
-        share_token: token,
-        year,
-      });
-
-      if (cancelled) return;
-
-      if (res.error) {
-        setError(res.error.message);
-        setLoading(false);
-        return;
-      }
-
-      // Handle null/empty states safely
-      const rawHabits = res.data?.habits;
-      const nextHabitsRaw = Array.isArray(rawHabits) ? rawHabits : [];
-      const nextEntries = res.data?.entries ?? {};
-      const nextHabits = nextHabitsRaw.map(normalizePublicHabit);
-
-      setPublicState({ habits: nextHabits, entries: nextEntries });
-
-      setFocusedHabitId((prev) => prev || nextHabits[0]?.id || "");
-      setLoading(false);
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, [token, year]);
-
+  /* -------------------------------------------------------------------------- */
+  /* LOADING & ERROR STATES                                                     */
+  /* -------------------------------------------------------------------------- */
   if (loading) {
     return (
-      <div className="min-h-screen w-full p-4 md:p-6 space-y-4 md:space-y-6">
-        {/* Header Skeleton */}
-        <Skeleton className="h-[72px] w-full max-w-6xl mx-auto" />
-
-        <div className="max-w-6xl mx-auto grid gap-4 lg:gap-6">
-          <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
-            {/* Summary Card Skeleton */}
-            <Skeleton className="h-[250px] w-full" />
-            {/* Trend Card Skeleton */}
-            <Skeleton className="h-[350px] w-full" />
-          </div>
-
-          {/* History Timeline Skeleton */}
-          <div className="space-y-4">
-            <Skeleton className="h-[80px] w-full" />
-            <Skeleton className="h-[80px] w-full opacity-70" />
-            <Skeleton className="h-[80px] w-full opacity-40" />
-          </div>
-        </div>
+      <div className="min-h-screen w-full flex flex-col items-center justify-center p-6 bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+        <h3 className="text-[16px] font-bold text-foreground tracking-tight">Loading Profile</h3>
+        <p className="text-[14px] text-muted-foreground mt-1">Fetching habit data...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-[13px] font-medium text-destructive bg-destructive/5">
-        {error}
+      <div className="min-h-screen w-full flex items-center justify-center p-6 bg-background">
+        <div className="glass-card rounded-[32px] p-8 max-w-sm w-full text-center flex flex-col items-center shadow-2xl border-destructive/20 animate-in fade-in zoom-in-95 duration-500">
+          <div className="bg-destructive/10 p-4 rounded-full mb-5 shadow-inner border border-destructive/10">
+            <AlertCircle className="h-8 w-8 text-destructive" />
+          </div>
+          <h2 className="text-[20px] font-bold tracking-tight text-foreground">Access Denied</h2>
+          <p className="text-[14px] text-muted-foreground mt-2 leading-relaxed">{error}</p>
+        </div>
       </div>
     );
   }
 
+  /* -------------------------------------------------------------------------- */
+  /* MAIN PUBLIC VIEW RENDER                                                    */
+  /* -------------------------------------------------------------------------- */
   return (
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
-      <div className="relative mx-auto max-w-6xl p-4 md:p-6 space-y-4 md:space-y-6 z-10">
+      <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        {/* PREMIUM HEADER */}
-        <header className="relative flex items-center justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20 gap-4">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
+        {/* HEADER */}
+        <header className="glass-card rounded-[32px] px-6 py-4 flex items-center justify-between transition-all duration-300">
+          <div className="flex items-center gap-4 flex-wrap">
+            <h1 className="text-[20px] font-bold tracking-tight flex items-center gap-3">
+              Habit Tracker
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase shadow-inner">
+                <Lock className="h-3 w-3" /> Shared View
+              </span>
+            </h1>
           </div>
-          <div className="flex items-center gap-2 sm:gap-3">
-            {/* The Theme Toggle Button */}
-            <Button onClick={toggleTheme} variant="ghost" size="icon" className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground">
-              {theme === "dark" ? <Sun className="h-[1.1rem] w-[1.1rem]" /> : <Moon className="h-[1.1rem] w-[1.1rem]" />}
-            </Button>
-            
-            {/* The Public View Pill */}
-            <div className="flex items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-2.5 py-1.5 rounded-full border border-border/50">
-              <Lock className="h-3.5 w-3.5" />
-              Public View
-            </div>
-          </div>
+          
+          <Button 
+            onClick={toggleTheme} 
+            variant="ghost" 
+            size="icon" 
+            className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95"
+          >
+            {theme === "dark" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
+          </Button>
         </header>
 
-        <div className="grid gap-4 lg:gap-6">
-          <div className="grid md:grid-cols-2 gap-4 lg:gap-6">
-            {/* 1. SUMMARY CARD (Subdued) */}
-            <Card>
-              <CardHeader className="pb-4">
-                <div className="flex flex-col gap-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    {/* Segmented Control / Pill Toggle */}
-                    <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
-                      <button
-                        onClick={() => setDashboardSummaryMode("year")}
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
-                          dashboardSummaryMode === "year"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "hover:text-foreground"
-                        }`}
-                      >
-                        Yearly
-                      </button>
-                      <button
-                        onClick={() => setDashboardSummaryMode("month")}
-                        className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
-                          dashboardSummaryMode === "month"
-                            ? "bg-background text-foreground shadow-sm"
-                            : "hover:text-foreground"
-                        }`}
-                      >
-                        Monthly
-                      </button>
-                    </div>
+        {/* DASHBOARD COLUMNS */}
+        <div className="grid lg:grid-cols-2 gap-6 lg:gap-8 items-stretch animate-in fade-in duration-500">
+          
+          {/* 1. SUMMARY COLUMN */}
+          <div className="flex flex-col gap-4 w-full">
+            
+            {/* OUTSIDE THE BOX: Header */}
+            <div className="px-2 space-y-1">
+              <h2 className="text-[22px] font-bold tracking-tight text-foreground">Summary</h2>
+              <p className="text-[14px] text-muted-foreground">{dashboardSummaryLabel}</p>
+            </div>
 
-                    {/* Conditional Month Selector */}
-                    {dashboardSummaryMode === "month" && (
-                      <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
-                        <SelectTrigger className="h-9 w-[110px] rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all">
-                          <SelectValue placeholder="Month" />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="01" className="rounded-lg">Jan</SelectItem>
-                          <SelectItem value="02" className="rounded-lg">Feb</SelectItem>
-                          <SelectItem value="03" className="rounded-lg">Mar</SelectItem>
-                          <SelectItem value="04" className="rounded-lg">Apr</SelectItem>
-                          <SelectItem value="05" className="rounded-lg">May</SelectItem>
-                          <SelectItem value="06" className="rounded-lg">Jun</SelectItem>
-                          <SelectItem value="07" className="rounded-lg">Jul</SelectItem>
-                          <SelectItem value="08" className="rounded-lg">Aug</SelectItem>
-                          <SelectItem value="09" className="rounded-lg">Sep</SelectItem>
-                          <SelectItem value="10" className="rounded-lg">Oct</SelectItem>
-                          <SelectItem value="11" className="rounded-lg">Nov</SelectItem>
-                          <SelectItem value="12" className="rounded-lg">Dec</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <p className="text-[13px] font-medium text-muted-foreground">
-                      Summary ({dashboardSummaryLabel})
-                    </p>
-                  </div>
+            {/* INSIDE THE BOX */}
+            <div className="glass-card rounded-[32px] p-6 sm:px-8 flex-1 flex flex-col gap-6 min-h-[300px]">
+              
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="inline-flex h-10 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 backdrop-blur-md p-1 border border-black/5 dark:border-white/5 shadow-inner">
+                  <button
+                    onClick={() => setDashboardSummaryMode("year")}
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-1.5 text-[13px] font-semibold transition-all duration-300 ${
+                      dashboardSummaryMode === "year"
+                        ? "bg-white dark:bg-black/60 text-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    Yearly
+                  </button>
+                  <button
+                    onClick={() => setDashboardSummaryMode("month")}
+                    className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-1.5 text-[13px] font-semibold transition-all duration-300 ${
+                      dashboardSummaryMode === "month"
+                        ? "bg-white dark:bg-black/60 text-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                        : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    Monthly
+                  </button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3 pt-0">
+
+                {dashboardSummaryMode === "month" && (
+                  <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
+                    <SelectTrigger className="h-10 w-[120px] rounded-full bg-white/50 dark:bg-white/5 backdrop-blur-md shadow-sm border border-white/20 dark:border-white/10 font-medium focus:ring-2 focus:ring-primary/40 transition-all">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-2xl glass-card">
+                      {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m => (
+                        <SelectItem key={m} value={m} className="rounded-lg font-medium">
+                          {new Date(2026, parseInt(m)-1).toLocaleString('default', { month: 'short' })}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              <div className="flex-1 flex flex-col">
                 {dashboardSummaryItems.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-                    <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-                    <div className="text-[13px] font-medium">No habits to show</div>
+                  <div className="h-full flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in-95 duration-700 flex-1">
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-full mb-4 shadow-sm border border-black/5 dark:border-white/5">
+                      <BarChart3 className="h-8 w-8 opacity-40 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-[16px] font-semibold text-foreground/70 tracking-tight">No habits logged</h3>
+                    <p className="text-[14px] text-muted-foreground/60 max-w-[220px] mt-1.5 leading-relaxed">
+                      This user hasn't logged any data yet.
+                    </p>
                   </div>
                 ) : (
                   <YearSummaryList
                     items={dashboardSummaryItems}
                     selectedHabitId={effectiveFocusedHabitId}
-                    onSelectHabit={(id) => setFocusedHabitId(id)}
+                    onSelectHabit={setFocusedHabitId}
                     mode={dashboardSummaryMode}
                   />
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+          </div>
 
-            {/* 2. TREND CARD (Dominant) */}
-            <Card className="border-primary/10 relative overflow-hidden">
-              <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
-              <CardHeader className="pb-2">
-                <div className="space-y-1">
-                  <CardTitle className="text-[17px] font-semibold tracking-tight">Habit Trend</CardTitle>
-                  <p className="text-[13px] text-muted-foreground">
-                    {focusedHabit ? `Analyzing ${focusedHabit.name}` : "No habit selected"}
-                  </p>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-4">
+          {/* 2. TREND COLUMN */}
+          <div className="flex flex-col gap-4 w-full">
+            
+            {/* OUTSIDE THE BOX: Header */}
+            <div className="px-2 space-y-1">
+              <h2 className="text-[22px] font-bold tracking-tight text-foreground">Habit Trend</h2>
+              <p className="text-[14px] text-muted-foreground font-medium">
+                {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
+              </p>
+            </div>
+            
+            {/* INSIDE THE BOX */}
+            <div className="glass-card rounded-[32px] p-6 sm:px-8 flex-1 flex flex-col gap-6 relative overflow-hidden min-h-[300px]">
+              <div className="flex-1 flex flex-col relative z-10">
                 {focusedHabit ? (
-                  <div className="space-y-6">
+                  <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <HabitStatsGrid habit={focusedHabit} stats={focusedStats} mode={dashboardSummaryMode} />
-                    <div className="p-1 bg-background/50 rounded-xl border border-border/40 shadow-inner">
+                    
+                    <div className="p-3 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/10 shadow-inner">
                       <TrendChart
                         series={focusedSeries}
                         habit={focusedHabit}
-                        year={year}
+                        year={selectedYear}
                         gradientPrefix="public"
                         emptyLabel={`No data yet for this habit in ${dashboardSummaryLabel}.`}
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-                    <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-                    <div className="text-[13px] font-medium">Not enough data</div>
+                  <div className="h-full flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in-95 duration-700 flex-1">
+                    <div className="bg-black/5 dark:bg-white/10 p-4 rounded-full mb-4 shadow-sm border border-black/5 dark:border-white/5">
+                      <BarChart3 className="h-8 w-8 opacity-40 text-muted-foreground" />
+                    </div>
+                    <h3 className="text-[16px] font-semibold text-foreground/70 tracking-tight">Not enough data</h3>
+                    <p className="text-[14px] text-muted-foreground/60 max-w-[220px] mt-1.5 leading-relaxed">
+                      No habit selected to visualize progress.
+                    </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
 
-          {/* 3. HISTORY TIMELINE CARD */}
-          <Card>
-            <CardHeader className="pb-4">
-              <div className="space-y-1">
-                <CardTitle className="text-[17px] font-semibold tracking-tight">Activity Log</CardTitle>
-                <p className="text-[13px] text-muted-foreground">Last 30 days of activity.</p>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-2">
-              {recentDates.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-                  <History className="h-8 w-8 mb-3 opacity-30 strokeWidth={1.5}" />
-                  <div className="text-[13px] font-medium">No recent logs</div>
-                </div>
-              ) : (
-                <div className="relative mt-2">
-                  {recentDates.map((d, index) => {
-                    const day = entries[d] || {};
-                    const items = (habits || [])
-                      .map((h) => {
-                        const e = day[h.id];
-                        if (!e) return null;
-                        return { id: h.id, label: h.name, value: entryToDisplay(h, e) };
-                      })
-                      .filter(Boolean);
-                    
-                    if (items.length === 0) return null; 
-                    
-                    const expanded = !!expandedDates[d];
-                    const isLast = index === recentDates.length - 1;
-
-                    return (
-                      <div key={d} className="flex gap-4 w-full">
-                        
-                        {/* Timeline Spine */}
-                        <div className="flex flex-col items-center relative z-10 w-4 shrink-0">
-                          <div 
-                            className={`mt-4 h-2.5 w-2.5 rounded-full border-2 border-background shadow-sm transition-all duration-300 ${
-                              expanded 
-                                ? "bg-primary ring-4 ring-primary/20 scale-110" 
-                                : "bg-muted-foreground/40 hover:bg-muted-foreground"
-                            }`} 
-                          />
-                          {!isLast && (
-                            <div className="w-px h-full bg-border/50 mt-2" />
-                          )}
-                        </div>
-
-                        {/* Timeline Content */}
-                        <div className="flex-1 pb-6">
-                          <div className={`rounded-2xl bg-background/70 backdrop-blur-[10px] shadow-apple transition-all duration-300 overflow-hidden ${
-                            expanded 
-                              ? "bg-background/80" 
-                              : "hover:shadow-apple-hover hover:bg-background/80"
-                          }`}>
-                            
-                            <div
-                              className="flex items-center justify-between p-3 sm:p-4 cursor-pointer select-none group"
-                              onClick={() => setExpandedDates(prev => ({ ...prev, [d]: !prev[d] }))}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  setExpandedDates(prev => ({ ...prev, [d]: !prev[d] }));
-                                }
-                              }}
-                            >
-                              <div className="space-y-0.5">
-                                <div className="text-[15px] font-semibold tracking-tight text-foreground transition-colors group-hover:text-foreground">
-                                  {formatPrettyDate(d)}
-                                </div>
-                                <div className="text-[13px] font-medium text-muted-foreground transition-colors">
-                                  {items.length} completed habit{items.length === 1 ? "" : "s"}
-                                </div>
-                              </div>
-                              
-                              <div className={`p-1.5 rounded-full transition-all duration-300 ${expanded ? "bg-primary/10 text-primary rotate-180" : "bg-transparent text-muted-foreground"}`}>
-                                <ChevronDown className="h-4 w-4" />
-                              </div>
-                            </div>
-
-                            {expanded && (
-                              <div className="px-3 pb-3 sm:px-4 sm:pb-4 space-y-1 pt-2">
-                                {items.map((it) => (
-                                  <div key={it.id} className="flex items-center justify-between gap-3 rounded-xl hover:bg-muted/40 px-3 py-2.5 transition-all">
-                                    <div className="flex items-center gap-3">
-                                      <div className="h-1.5 w-1.5 rounded-full bg-primary/40" />
-                                      <div className="text-[13px] font-semibold">{it.label}</div>
-                                    </div>
-                                    {/* Standardized font-medium and tabular-nums applied here too */}
-                                    <div className="text-[13px] font-medium tabular-nums text-foreground/90 mt-0.5">
-                                      {it.value}
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-          
         </div>
       </div>
     </div>

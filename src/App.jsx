@@ -218,23 +218,24 @@ export default function HabitTrackerMVP() {
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
       <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        <header className="relative flex items-center justify-between bg-background/70 backdrop-blur-[10px] rounded-2xl px-6 py-4 shadow-apple border border-border/20">
+        {/* REFINED HEADER: Now uses glass-card and sits seamlessly at the top */}
+        <header className="glass-card rounded-[32px] px-6 py-4 flex items-center justify-between transition-all duration-300">
           
           {/* LEFT SIDE: Title & Cloud Status */}
-          <div className="flex items-center gap-3 md:gap-4">
-            <h1 className="text-xl font-semibold tracking-tight">Habit Tracker</h1>
+          <div className="flex items-center gap-4">
+            <h1 className="text-[20px] font-bold tracking-tight text-foreground">Habit Tracker</h1>
             
             <div className="hidden md:flex items-center">
               {cloudError ? (
-                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-destructive bg-destructive/10 px-3 rounded-full">
+                <span className="inline-flex h-7 items-center gap-1.5 text-[12px] font-bold text-destructive bg-destructive/10 px-3 rounded-full border border-destructive/20">
                   <AlertCircle className="h-3.5 w-3.5 -mt-[1px]" /> Error
                 </span>
               ) : cloudReady ? (
-                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-3 rounded-full">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-green-500/70 -mt-[1px]" /> Synced
+                <span className="inline-flex h-7 items-center gap-1.5 text-[12px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-3 rounded-full border border-emerald-500/20 transition-all">
+                  <CheckCircle2 className="h-3.5 w-3.5 -mt-[1px]" /> Synced
                 </span>
               ) : (
-                <span className="inline-flex h-7 items-center gap-1.5 text-[13px] font-medium text-muted-foreground bg-muted/40 px-3 rounded-full">
+                <span className="inline-flex h-7 items-center gap-1.5 text-[12px] font-bold text-primary bg-primary/10 px-3 rounded-full border border-primary/20 animate-pulse">
                   <Loader2 className="h-3.5 w-3.5 animate-spin -mt-[1px]" /> Syncing
                 </span>
               )}
@@ -247,7 +248,7 @@ export default function HabitTrackerMVP() {
             {/* Desktop Share Button */}
             <div className="hidden sm:flex items-center gap-3">
               <ShareStatus shareError={shareError} shareOk={shareOk} />
-              <Button onClick={handleCreateShareLink} variant="secondary" className="gap-2 rounded-full px-5 shadow-none bg-primary/10 text-primary hover:bg-primary/20 font-medium transition-all" disabled={shareBusy}>
+              <Button onClick={handleCreateShareLink} className="gap-2 rounded-full px-5 shadow-lg shadow-primary/20 bg-primary text-white hover:scale-105 active:scale-95 transition-all font-bold text-[13px]" disabled={shareBusy}>
                 {shareBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <LinkIcon className="h-4 w-4" />} Share
               </Button>
             </div>
@@ -260,9 +261,7 @@ export default function HabitTrackerMVP() {
                 </Button>
               </DialogTrigger>
               
-              {/* Glassified Modal Content */}
               <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden">
-                {/* Subtle Ambient Glow inside the modal */}
                 <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
                 
                 <DialogHeader className="pb-4 relative z-10">
@@ -306,7 +305,7 @@ export default function HabitTrackerMVP() {
                     </div>
                   </div>
 
-                  {/* Section: Mobile Share (Only visible on phones) */}
+                  {/* Section: Mobile Share */}
                   <div className="sm:hidden space-y-3">
                     <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Share</h3>
                     <Button onClick={handleCreateShareLink} variant="secondary" className="w-full gap-2 rounded-2xl h-14 text-[15px] font-bold shadow-inner border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-[0.98]" disabled={shareBusy}>
@@ -338,7 +337,7 @@ export default function HabitTrackerMVP() {
 
         <Tabs defaultValue="log" className="w-full flex flex-col items-center mt-6 sm:mt-8">
           
-          {/* FLOATING NAVIGATION PILL ("Dynamic Island" style) */}
+          {/* FLOATING NAVIGATION PILL */}
           <TabsList className="sticky top-6 z-50 glass-card rounded-full p-1.5 shadow-2xl shadow-black/10 dark:shadow-black/40 border-white/20 mb-8 flex w-fit min-w-[340px] max-w-md transition-all">
             <TabsTrigger
               value="log"
@@ -360,7 +359,6 @@ export default function HabitTrackerMVP() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Wrapper to ensure content takes full width while the pill stays centered */}
           <div className="w-full">
             <TabsContent value="log" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
               <DailyLogTab
@@ -394,9 +392,6 @@ export default function HabitTrackerMVP() {
 
             <TabsContent value="history" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
               <HistoryTab
-                historyMonth={historyMonth}
-                setHistoryMonth={setHistoryMonth}
-                filteredHistory={filteredHistory}
                 entries={state.entries}
                 habits={state.habits}
                 removeLog={removeLog}
