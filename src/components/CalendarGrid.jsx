@@ -117,20 +117,6 @@ export default function CalendarGrid({
           );
         })}
       </div>
-
-      {/* 4. LEGEND (Optional, adds to the "Data Tool" look) */}
-      <div className="flex items-center justify-between px-1 pt-2 border-t border-white/5">
-        <span className="text-[10px] text-muted-foreground/50 font-medium uppercase tracking-tight">Consistency</span>
-        <div className="flex gap-1">
-          {[0.2, 0.5, 0.8, 1].map((lvl) => (
-            <div 
-              key={lvl} 
-              className="w-2 h-2 rounded-sm" 
-              style={{ backgroundColor: `rgba(var(--primary-rgb), ${lvl})` }}
-            />
-          ))}
-        </div>
-      </div>
     </div>
   );
 }
