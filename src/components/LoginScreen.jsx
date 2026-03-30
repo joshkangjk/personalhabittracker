@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { supabase } from "../supabaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -11,44 +11,41 @@ export default function LoginScreen() {
   const [verifying, setVerifying] = useState(false);
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+  
+  // NEW: Timer state
+  const [timer, setTimer] = useState(0);
 
   const inputRefs = useRef([]);
 
-  const handleOtpChange = (index, value) => {
-    // 1. Handle iOS AutoFill or Paste (which dumps all 6 digits into one box)
-    if (value.length > 1) {
-      const pastedCode = value.replace(/\D/g, "").slice(0, 6);
-      setOtp(pastedCode);
-      // Focus the last filled box
-      if (pastedCode.length > 0) {
-        inputRefs.current[Math.min(pastedCode.length - 1, 5)]?.focus();
-      }
-      return;
+  // NEW: Countdown effect
+  useEffect(() => {
+    let interval;
+    if (timer > 0 && sent) {
+      interval = setInterval(() => {
+        setTimer((prev) => prev - 1);
+      }, 1000);
+    } else if (timer === 0) {
+      clearInterval(interval);
     }
+    return () => clearInterval(interval);
+  }, [timer, sent]);
 
-    // 2. Handle single digit typing (only allow numbers)
-    if (value && !/^\d$/.test(value)) return;
-
-    // 3. Update the OTP string
-    let newOtpArray = otp.split("");
-    while (newOtpArray.length < 6) newOtpArray.push(""); // Pad with empty strings
-    newOtpArray[index] = value;
-    
-    const newOtp = newOtpArray.join("");
-    setOtp(newOtp);
-
-    // 4. Move focus to the next box automatically
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
+  // Auto-submit effect
+  useEffect(() => {
+    if (otp.length === 6) {
+      verifyOtp();
     }
-  };
+  }, [otp]);
 
-  const handleOtpKeyDown = (index, e) => {
-    // Move focus to the previous box on Backspace if current box is empty
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
+  // Auto-focus the first OTP input when the screen switches
+  useEffect(() => {
+    if (sent) {
+      // A tiny timeout ensures the boxes have finished rendering in the DOM before focusing
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 50);
     }
-  };
+  }, [sent]);
 
   async function sendOtp() {
     const clean = email.trim();
@@ -71,6 +68,7 @@ export default function LoginScreen() {
     }
 
     setSent(true);
+    setTimer(60); // NEW: Start the 60-second timer on success
   }
 
   async function verifyOtp() {
@@ -93,28 +91,45 @@ export default function LoginScreen() {
     }
   }
 
-  useEffect(() => {
-    if (otp.length === 6) {
-      verifyOtp();
+  const handleOtpChange = (index, value) => {
+    if (value.length > 1) {
+      const pastedCode = value.replace(/\D/g, "").slice(0, 6);
+      setOtp(pastedCode);
+      if (pastedCode.length > 0) {
+        inputRefs.current[Math.min(pastedCode.length - 1, 5)]?.focus();
+      }
+      return;
     }
-  }, [otp]);
+
+    if (value && !/^\d$/.test(value)) return;
+
+    let newOtpArray = otp.split("");
+    while (newOtpArray.length < 6) newOtpArray.push("");
+    newOtpArray[index] = value;
+    
+    const newOtp = newOtpArray.join("");
+    setOtp(newOtp);
+
+    if (value && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOtpKeyDown = (index, e) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
 
   return (
-    // Removed the solid background gradient so the index.html animated radial background shines through
     <div className="min-h-screen w-full flex items-center justify-center p-6 font-sans antialiased selection:bg-primary/20 relative z-10">
-      
       <form
-        className="glass-card w-full max-w-sm rounded-[32px] p-8 sm:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-2xl border-white/20 relative overflow-hidden"
         onSubmit={(e) => {
           e.preventDefault();
-          if (!sent) {
-            sendOtp();
-          } else {
-            verifyOtp();
-          }
+          if (!sent) sendOtp();
         }}
+        className="glass-card w-full max-w-sm rounded-[32px] p-8 sm:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-2xl border-white/20 relative overflow-hidden"
       >
-        {/* Decorative subtle glow inside the card */}
         <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
 
         {/* HEADER SECTION */}
@@ -135,20 +150,41 @@ export default function LoginScreen() {
           <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">
             Email Address
           </div>
-          <Input
-            type="email"
-            inputMode="email"
-            autoComplete="email"
-            placeholder="name@example.com"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              if (errorMsg) setErrorMsg("");
-              if (sent) setSent(false);
-            }}
-            // iOS style indented input
-            className="h-14 text-[15px] px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/50"
-          />
+
+          {!sent ? (
+            <Input
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (errorMsg) setErrorMsg("");
+              }}
+              className="h-14 text-[15px] px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/50"
+            />
+          ) : (
+            <div className="h-14 flex items-center justify-between px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner transition-all animate-in fade-in duration-300">
+              <span className="text-[15px] font-medium text-foreground/70 truncate mr-3">
+                {email}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setSent(false);
+                  setOtp("");
+                  setErrorMsg("");
+                  setTimer(0); // NEW: Reset timer if they change email
+                }}
+                className="text-[13px] font-bold text-primary hover:text-primary/80 transition-colors whitespace-nowrap active:scale-95"
+              >
+                Change
+              </button>
+            </div>
+          )}
+
+          {/* 6-BOX OTP CODE */}
           {sent && (
             <div className="space-y-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2 text-center">
@@ -162,7 +198,7 @@ export default function LoginScreen() {
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    maxLength={6} // High max length to catch iOS autofill dumps
+                    maxLength={6}
                     autoComplete={index === 0 ? "one-time-code" : "off"}
                     value={otp[index] || ""}
                     onChange={(e) => handleOtpChange(index, e.target.value)}
@@ -174,11 +210,10 @@ export default function LoginScreen() {
             </div>
           )}
         </div>
-        
+
         {/* SUBMIT BUTTON & LOADING STATES */}
         <div className="space-y-4 relative z-10">
           
-          {/* 1. Only show the Continue button BEFORE the email is sent */}
           {!sent && (
             <Button
               type="submit"
@@ -196,7 +231,6 @@ export default function LoginScreen() {
             </Button>
           )}
 
-          {/* 2. Show a standalone loading spinner when auto-submitting the OTP */}
           {sent && verifying && (
             <div className="flex justify-center items-center py-3 text-muted-foreground animate-in fade-in duration-300">
               <Loader2 className="h-5 w-5 animate-spin mr-2 text-primary" />
@@ -204,16 +238,26 @@ export default function LoginScreen() {
             </div>
           )}
 
-          {/* MESSAGES */}
           {errorMsg && (
             <div className="text-[13px] font-medium text-destructive text-center bg-destructive/10 py-2 px-3 rounded-xl border border-destructive/10 animate-in fade-in duration-300">
               {errorMsg}
             </div>
           )}
 
+          {/* NEW: RESEND TIMER UI */}
           {sent && !verifying && (
-            <div className="text-[13px] font-medium text-muted-foreground text-center animate-in fade-in duration-300">
-              Enter the code above to finish signing in.
+            <div className="pt-2 text-center animate-in fade-in duration-300">
+              <p className="text-[13px] text-muted-foreground mb-1">
+                Didn't receive a code?
+              </p>
+              <button
+                type="button"
+                disabled={timer > 0 || sending}
+                onClick={sendOtp}
+                className="text-[13px] font-bold text-primary hover:text-primary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+              >
+                {sending ? "Sending..." : timer > 0 ? `Resend Code in ${timer}s` : "Resend Code"}
+              </button>
             </div>
           )}
         </div>
