@@ -20,32 +20,32 @@ export default function DashboardTab({
   selectedYear
 }) {
   return (
-    <div className="grid md:grid-cols-2 gap-6 lg:gap-8">
+    <div className="grid md:grid-cols-2 gap-6 lg:gap-8 animate-in fade-in duration-500">
       
       {/* 1. SUMMARY CARD (Subdued, supporting role) */}
-      <Card>
-        <CardHeader className="pb-6">
-          <div className="flex flex-col gap-3">
+      <Card className="glass-card rounded-[32px] h-full flex flex-col">
+        <CardHeader className="pb-6 pt-6 px-6 sm:px-8">
+          <div className="flex flex-col gap-4">
             
             <div className="flex flex-wrap items-center gap-3">
-              {/* Segmented Control / Pill Toggle */}
-              <div className="inline-flex h-9 items-center justify-center rounded-full bg-muted/60 p-1 text-muted-foreground shadow-inner">
+              {/* Segmented Control / Pill Toggle - Upgraded to Glass */}
+              <div className="inline-flex h-10 items-center justify-center rounded-full bg-black/5 dark:bg-white/5 backdrop-blur-md p-1 border border-black/5 dark:border-white/5 shadow-inner">
                 <button
                   onClick={() => setDashboardSummaryMode("year")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-1.5 text-[13px] font-semibold transition-all duration-300 ${
                     dashboardSummaryMode === "year"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "hover:text-foreground"
+                      ? "bg-white dark:bg-black/60 text-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/5"
                   }`}
                 >
                   Yearly
                 </button>
                 <button
                   onClick={() => setDashboardSummaryMode("month")}
-                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1 text-[13px] font-medium transition-all duration-200 ${
+                  className={`inline-flex items-center justify-center whitespace-nowrap rounded-full px-5 py-1.5 text-[13px] font-semibold transition-all duration-300 ${
                     dashboardSummaryMode === "month"
-                      ? "bg-background text-foreground shadow-sm"
-                      : "hover:text-foreground"
+                      ? "bg-white dark:bg-black/60 text-foreground shadow-sm ring-1 ring-black/5 dark:ring-white/10"
+                      : "text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-white/5"
                   }`}
                 >
                   Monthly
@@ -55,41 +55,36 @@ export default function DashboardTab({
               {/* Conditional Month Selector */}
               {dashboardSummaryMode === "month" && (
                 <Select value={dashboardMonth} onValueChange={setDashboardMonth}>
-                  <SelectTrigger className="h-9 w-[110px] rounded-full bg-background/60 shadow-sm border border-border/50 focus:ring-2 focus:ring-primary/20 transition-all">
+                  <SelectTrigger className="h-10 w-[120px] rounded-full bg-white/50 dark:bg-white/5 backdrop-blur-md shadow-sm border border-white/20 dark:border-white/10 font-medium focus:ring-2 focus:ring-primary/40 transition-all">
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="01" className="rounded-lg">Jan</SelectItem>
-                    <SelectItem value="02" className="rounded-lg">Feb</SelectItem>
-                    <SelectItem value="03" className="rounded-lg">Mar</SelectItem>
-                    <SelectItem value="04" className="rounded-lg">Apr</SelectItem>
-                    <SelectItem value="05" className="rounded-lg">May</SelectItem>
-                    <SelectItem value="06" className="rounded-lg">Jun</SelectItem>
-                    <SelectItem value="07" className="rounded-lg">Jul</SelectItem>
-                    <SelectItem value="08" className="rounded-lg">Aug</SelectItem>
-                    <SelectItem value="09" className="rounded-lg">Sep</SelectItem>
-                    <SelectItem value="10" className="rounded-lg">Oct</SelectItem>
-                    <SelectItem value="11" className="rounded-lg">Nov</SelectItem>
-                    <SelectItem value="12" className="rounded-lg">Dec</SelectItem>
+                  <SelectContent className="rounded-2xl glass-card">
+                    {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m => (
+                      <SelectItem key={m} value={m} className="rounded-lg font-medium">
+                        {new Date(2026, parseInt(m)-1).toLocaleString('default', { month: 'short' })}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               )}
             </div>
 
             <div className="flex items-center justify-between">
-              <p className="text-[13px] font-medium text-muted-foreground">
+              <p className="text-[14px] font-bold text-foreground/80 tracking-tight">
                 Summary ({dashboardSummaryLabel})
               </p>
             </div>
             
           </div>
         </CardHeader>
-        <CardContent className="space-y-4 pt-0">
+        <CardContent className="space-y-4 pt-0 px-6 sm:px-8 pb-8 flex-1">
           {dashboardSummaryItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-              <BarChart3 className="h-8 w-8 mb-3 opacity-30" />
-              <div className="text-[15px] font-medium">No habits logged yet</div>
-              <div className="text-[13px] opacity-70 mt-1">Check off some habits to see your summary.</div>
+            <div className="h-full flex flex-col items-center justify-center py-16 text-muted-foreground bg-black/5 dark:bg-white/5 rounded-[24px] border border-dashed border-black/10 dark:border-white/10">
+              <div className="bg-white/50 dark:bg-white/10 p-4 rounded-full mb-4 shadow-sm border border-white/20 dark:border-white/5">
+                <BarChart3 className="h-8 w-8 opacity-40" />
+              </div>
+              <div className="text-[16px] font-semibold text-foreground/70">No habits logged yet</div>
+              <div className="text-[14px] opacity-70 mt-1 max-w-[200px] text-center leading-relaxed">Check off some habits to see your summary.</div>
             </div>
           ) : (
             <YearSummaryList
@@ -103,25 +98,25 @@ export default function DashboardTab({
       </Card>
 
       {/* 2. TREND CARD (Dominant, primary analytical tool) */}
-      <Card className="border-primary/10 relative overflow-hidden">
-        {/* Optional decorative glow inside the trend card */}
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-24 w-24 rounded-full bg-primary/5 blur-2xl pointer-events-none" />
+      <Card className="glass-card rounded-[32px] relative overflow-hidden h-full flex flex-col">
+        {/* Decorative glow inside the trend card */}
+        <div className="absolute top-0 right-0 -mt-10 -mr-10 h-40 w-40 rounded-full bg-primary/20 blur-3xl pointer-events-none" />
         
-        <CardHeader className="pb-6">
+        <CardHeader className="pb-6 pt-6 px-6 sm:px-8 relative z-10">
           <div className="space-y-1">
-            <CardTitle className="text-[17px] font-semibold tracking-tight">Habit Trend</CardTitle>
-            <p className="text-[13px] text-muted-foreground">
+            <CardTitle className="text-[22px] font-bold tracking-tight text-foreground">Habit Trend</CardTitle>
+            <p className="text-[14px] text-muted-foreground font-medium">
               {focusedHabit ? `Analyzing ${focusedHabit.name}` : "Select a habit to view trends"}
             </p>
           </div>
         </CardHeader>
         
-        <CardContent className="space-y-4 pt-4">
+        <CardContent className="space-y-4 pt-0 px-6 sm:px-8 pb-8 flex-1 relative z-10">
           {focusedHabit ? (
-            <div className="space-y-6">
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <HabitStatsGrid habit={focusedHabit} stats={focusedStats} mode={dashboardSummaryMode} />
               
-              <div className="p-1 bg-background/50 rounded-xl border border-border/40 shadow-inner">
+              <div className="p-3 bg-black/5 dark:bg-white/5 rounded-3xl border border-black/5 dark:border-white/10 shadow-inner">
                 <TrendChart
                   series={focusedSeries}
                   habit={focusedHabit}
@@ -132,10 +127,12 @@ export default function DashboardTab({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-background/30 rounded-xl border border-dashed border-border/50">
-              <BarChart3 className="h-8 w-8 mb-3 opacity-30 strokeWidth={1.5}" />
-              <div className="text-[15px] font-medium">Not enough data</div>
-              <div className="text-[13px] opacity-70 mt-1">Add a habit first to visualize your progress.</div>
+             <div className="h-full flex flex-col items-center justify-center py-16 text-muted-foreground bg-black/5 dark:bg-white/5 rounded-[24px] border border-dashed border-black/10 dark:border-white/10">
+              <div className="bg-white/50 dark:bg-white/10 p-4 rounded-full mb-4 shadow-sm border border-white/20 dark:border-white/5">
+                <BarChart3 className="h-8 w-8 opacity-40" />
+              </div>
+              <div className="text-[16px] font-semibold text-foreground/70">Not enough data</div>
+              <div className="text-[14px] opacity-70 mt-1 max-w-[200px] text-center leading-relaxed">Add a habit first to visualize your progress.</div>
             </div>
           )}
         </CardContent>

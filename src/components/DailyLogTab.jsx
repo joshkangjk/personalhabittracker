@@ -28,16 +28,16 @@ export default function DailyLogTab({
   getHabitDnDProps
 }) {
   return (
-    <Card className="transition-shadow hover:shadow-apple-hover">
+    <Card className="glass-card rounded-[32px] transition-all duration-300 border-white/20">
       
-      <CardHeader className="pb-6">
+      <CardHeader className="pb-6 pt-6 px-6 sm:px-8">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           
           {/* Left Side: Titles & Mobile Add Button */}
           <div className="flex items-center justify-between w-full sm:w-auto">
             <div className="space-y-1">
-              <CardTitle className="text-[17px] font-semibold tracking-tight">Daily Log</CardTitle>
-              <p className="text-[13px] text-muted-foreground">Track your habits for today.</p>
+              <CardTitle className="text-[22px] font-bold tracking-tight text-foreground">Daily Log</CardTitle>
+              <p className="text-[14px] text-muted-foreground">Track your habits for today.</p>
             </div>
             
             {/* Mobile 'Add Habit' button */}
@@ -50,11 +50,11 @@ export default function DailyLogTab({
           <div className="flex items-center w-full sm:w-auto gap-4">
             
             {/* iOS-STYLE FULL-WIDTH DATE PICKER PILL */}
-            <div className="flex items-center justify-between w-full sm:w-auto bg-muted/40 rounded-2xl p-1 sm:gap-1">
+            <div className="flex items-center justify-between w-full sm:w-auto bg-black/5 dark:bg-white/5 backdrop-blur-md rounded-2xl p-1 sm:gap-1 border border-black/5 dark:border-white/5 shadow-inner">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
+                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-black/50 transition-all active:scale-95" 
                 onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, -1) } })}
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -64,13 +64,13 @@ export default function DailyLogTab({
                 type="date"
                 value={activeDate}
                 onChange={handleActiveDateChange}
-                className="w-full sm:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-[15px] text-center font-medium focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
+                className="w-full sm:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-[15px] text-center font-semibold focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
               />
 
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-background/60" 
+                className="h-8 w-8 rounded-xl shrink-0 text-muted-foreground hover:text-foreground hover:bg-white/50 dark:hover:bg-black/50 transition-all active:scale-95" 
                 onClick={() => handleActiveDateChange({ target: { value: addDaysISO(activeDate, 1) } })}
                 disabled={activeDate >= todayISO()} 
               >
@@ -87,13 +87,13 @@ export default function DailyLogTab({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-6 sm:px-8 pb-8">
         <div className="grid gap-3">
           {habits.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-              <ListX className="h-10 w-10 mb-3 opacity-20 strokeWidth={1.5}" />
-              <div className="text-[15px] font-medium">No habits yet</div>
-              <div className="text-[13px] opacity-70">Click 'Add Habit' to get started.</div>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground bg-black/5 dark:bg-white/5 rounded-2xl border border-dashed border-black/10 dark:border-white/10">
+              <ListX className="h-12 w-12 mb-3 opacity-20" />
+              <div className="text-[16px] font-semibold text-foreground/70">No habits yet</div>
+              <div className="text-[14px] opacity-70 mt-1">Click 'Add Habit' to get started.</div>
             </div>
           ) : (
             habits.map((h) => (
