@@ -7,10 +7,12 @@ import { Loader2, CheckCircle2, Sparkles } from "lucide-react";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [sending, setSending] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  async function sendLink() {
+  async function sendOtp() {
     const clean = email.trim();
     if (!clean || sending) return;
 
@@ -19,7 +21,7 @@ export default function LoginScreen() {
 
     const { error } = await supabase.auth.signInWithOtp({
       email: clean,
-      options: { emailRedirectTo: window.location.origin },
+      options: { shouldCreateUser: true },
     });
 
     setSending(false);
@@ -33,6 +35,26 @@ export default function LoginScreen() {
     setSent(true);
   }
 
+  async function verifyOtp() {
+    if (!otp.trim() || verifying) return;
+
+    setVerifying(true);
+    setErrorMsg("");
+
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: otp.trim(),
+      type: "email",
+    });
+
+    setVerifying(false);
+
+    if (error) {
+      setErrorMsg(error.message);
+      return;
+    }
+  }
+
   return (
     // Removed the solid background gradient so the index.html animated radial background shines through
     <div className="min-h-screen w-full flex items-center justify-center p-6 font-sans antialiased selection:bg-primary/20 relative z-10">
@@ -41,7 +63,11 @@ export default function LoginScreen() {
         className="glass-card w-full max-w-sm rounded-[32px] p-8 sm:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-2xl border-white/20 relative overflow-hidden"
         onSubmit={(e) => {
           e.preventDefault();
-          sendLink();
+          if (!sent) {
+            sendOtp();
+          } else {
+            verifyOtp();
+          }
         }}
       >
         {/* Decorative subtle glow inside the card */}
@@ -55,7 +81,7 @@ export default function LoginScreen() {
           <div className="space-y-1.5">
             <h1 className="text-[24px] font-bold tracking-tight text-foreground">Habit Tracker</h1>
             <p className="text-[14px] text-muted-foreground max-w-[240px] leading-relaxed mx-auto">
-              {sent ? "Check your email for the magic link." : "Enter your email to sign in or create an account."}
+              {sent ? "Enter the 6-digit code sent to your email." : "Enter your email to sign in or create an account."}
             </p>
           </div>
         </div>
@@ -79,6 +105,16 @@ export default function LoginScreen() {
             // iOS style indented input
             className="h-14 text-[15px] px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/40 transition-all font-medium placeholder:text-muted-foreground/50"
           />
+          {sent && (
+            <Input
+              type="text"
+              inputMode="numeric"
+              placeholder="Enter 6-digit code"
+              value={otp}
+              onChange={(e) => setOtp(e.target.value)}
+              className="h-14 text-[15px] px-5 rounded-2xl bg-black/5 dark:bg-white/5 border border-black/5 dark:border-white/5 shadow-inner focus-visible:ring-2 focus-visible:ring-primary/40 transition-all font-medium mt-2"
+            />
+          )}
         </div>
 
         {/* SUBMIT BUTTON */}
@@ -86,18 +122,20 @@ export default function LoginScreen() {
           <Button
             type="submit"
             className="w-full h-14 rounded-2xl bg-primary text-white shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all font-bold text-[15px]"
-            disabled={!email.trim() || sending}
+            disabled={!email.trim() || sending || verifying}
           >
             {sending ? (
               <span className="inline-flex items-center gap-2">
                 <Loader2 className="h-5 w-5 animate-spin" />
                 Sending...
               </span>
-            ) : sent ? (
+            ) : verifying ? (
               <span className="inline-flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5" />
-                Link Sent
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Verifying...
               </span>
+            ) : sent ? (
+              "Verify Code"
             ) : (
               "Continue with Email"
             )}
@@ -112,7 +150,7 @@ export default function LoginScreen() {
 
           {sent && (
             <div className="text-[13px] font-medium text-muted-foreground text-center animate-in fade-in duration-300">
-              You can safely close this window.
+              Enter the code above to finish signing in.
             </div>
           )}
         </div>
