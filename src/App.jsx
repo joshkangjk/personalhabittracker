@@ -20,6 +20,8 @@ import { useIsMobile } from "./hooks/useIsMobile";
 import { useHabitDragAndDrop } from "./hooks/useHabitDragAndDrop";
 import { useTheme } from "./hooks/useTheme";
 
+import PullToRefresh from 'react-simple-pull-to-refresh';
+
 export default function HabitTrackerMVP() {
   const { theme, toggleTheme } = useTheme();
   const {
@@ -358,16 +360,22 @@ export default function HabitTrackerMVP() {
 
           <div className="w-full">
             <TabsContent value="log" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
-              <DailyLogTab
-                habits={state.habits}
-                entries={state.entries}
-                activeDate={activeDate}
-                handleActiveDateChange={handleActiveDateChange}
-                addHabit={addHabit}
-                isMobile={isMobile}
-                getHabitRowHandlers={getHabitRowHandlers}
-                getHabitDnDProps={getHabitDnDProps}
-              />
+              <PullToRefresh 
+                onRefresh={() => window.location.reload()}
+                pullingContent={""} // Removes "Pull to refresh" text for a cleaner look
+                refreshingContent={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
+              >
+                <DailyLogTab
+                  habits={state.habits}
+                  entries={state.entries}
+                  activeDate={activeDate}
+                  handleActiveDateChange={handleActiveDateChange}
+                  addHabit={addHabit}
+                  isMobile={isMobile}
+                  getHabitRowHandlers={getHabitRowHandlers}
+                  getHabitDnDProps={getHabitDnDProps}
+                />
+              </PullToRefresh>
             </TabsContent>
 
             <TabsContent value="dashboard" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
