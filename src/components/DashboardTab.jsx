@@ -64,9 +64,14 @@ export default function DashboardTab({
                   <SelectValue placeholder="Month" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl glass-card">
-                  {["01","02","03","04","05","06","07","08","09","10","11","12"].map(m => (
-                    <SelectItem key={m} value={m} className="rounded-lg font-medium">
-                      {new Date(2026, parseInt(m)-1).toLocaleString('default', { month: 'short' })}
+                  {[
+                    { val: "01", label: "Jan" }, { val: "02", label: "Feb" }, { val: "03", label: "Mar" },
+                    { val: "04", label: "Apr" }, { val: "05", label: "May" }, { val: "06", label: "Jun" },
+                    { val: "07", label: "Jul" }, { val: "08", label: "Aug" }, { val: "09", label: "Sep" },
+                    { val: "10", label: "Oct" }, { val: "11", label: "Nov" }, { val: "12", label: "Dec" }
+                  ].map(m => (
+                    <SelectItem key={m.val} value={m.val} className="rounded-lg font-medium">
+                      {m.label}
                     </SelectItem>
                   ))}
                 </SelectContent>

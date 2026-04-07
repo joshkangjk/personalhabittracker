@@ -3,7 +3,6 @@ import { format } from "date-fns";
 import { CalendarX } from "lucide-react";
 import CalendarGrid from "./CalendarGrid";
 import HistoryDay from "./HistoryDay";
-import { formatPrettyDate } from "../lib/helpers";
 import { entryToDisplay } from "../lib/stats";
 
 export default function HistoryTab({ entries, habits, removeLog }) {
@@ -64,9 +63,7 @@ export default function HistoryTab({ entries, habits, removeLog }) {
                 dayEntries={selectedEntries}
                 habits={habits}
                 onDeleteOne={(habitId) => removeLog(selectedDate, habitId)}
-                formatPrettyDate={formatPrettyDate}
                 entryToDisplay={entryToDisplay}
-                isLast={true}
               />
             </div>
           ) : (
