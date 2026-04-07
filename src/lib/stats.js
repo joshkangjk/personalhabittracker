@@ -111,95 +111,8 @@ export function listDatesInYear(entries, year) {
     .sort((a, b) => (a < b ? 1 : -1));
 }
 
-export function habitStats(habit, entries, year) {
-  const mode = "year";
-  const bounds = periodBounds({ mode, year });
-  const startISO = isoFromDate(bounds.start);
-  const endISO = isoFromDate(bounds.end);
-
-  const dates = Object.keys(entries)
-    .filter((d) => d >= startISO && d <= endISO)
-    .sort();
-
-  let total = 0;
-  let daysLogged = 0;
-  let best = null;
-
-  const doneSet = new Set();
-
-  for (const d of dates) {
-    const e = getEntry(entries, d, habit.id);
-    if (!e) continue;
-
-    daysLogged += 1;
-
-    const v = entryToNumber(habit, e, 0);
-    total += v;
-
-    if (habit.type === "number") {
-      best = best === null ? v : Math.max(best, v);
-    }
-
-    if (entryCountsAsDone(habit, e)) {
-      doneSet.add(d);
-    }
-  }
-
-  const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
-  const daysTotal = daysBetweenInclusive(bounds.start, bounds.endFull);
-
-  const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
-  const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
-
-  const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
-
-  let currentStreak = 0;
-  for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
-    const iso = isoFromDate(d);
-    if (doneSet.has(iso)) currentStreak += 1;
-    else break;
-  }
-
-  let bestStreak = 0;
-  let run = 0;
-  for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
-    const iso = isoFromDate(d);
-    if (doneSet.has(iso)) {
-      run += 1;
-      bestStreak = Math.max(bestStreak, run);
-    } else {
-      run = 0;
-    }
-  }
-
-  const goalTotal = goalForPeriod(habit, { mode, year });
-  const expectedToDate = goalTotal > 0 ? (goalTotal * (daysElapsed / Math.max(1, daysTotal))) : 0;
-  const onTrackPct = goalTotal > 0 && expectedToDate > 0 ? total / expectedToDate : null;
-
-  const remainingDays = Math.max(0, daysTotal - daysElapsed);
-  const remaining = Math.max(0, goalTotal - total);
-  const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
-
-  return {
-    total,
-    daysLogged,
-    best,
-    avgPerLoggedDay,
-    avgPerDay,
-    daysElapsed,
-    daysTotal,
-    coveragePct,
-    currentStreak,
-    bestStreak,
-    goalTotal,
-    expectedToDate,
-    onTrackPct,
-    requiredPerDay,
-  };
-}
-
-export function habitStatsMonth(habit, entries, year, month) {
-  const mode = "month";
+export function habitStats(habit, entries, year, month = null) {
+  const mode = month ? "month" : "year";
   const bounds = periodBounds({ mode, year, month });
   const startISO = isoFromDate(bounds.start);
   const endISO = isoFromDate(bounds.end);
@@ -219,17 +132,11 @@ export function habitStatsMonth(habit, entries, year, month) {
     if (!e) continue;
 
     daysLogged += 1;
-
     const v = entryToNumber(habit, e, 0);
     total += v;
 
-    if (habit.type === "number") {
-      best = best === null ? v : Math.max(best, v);
-    }
-
-    if (entryCountsAsDone(habit, e)) {
-      doneSet.add(d);
-    }
+    if (habit.type === "number") best = best === null ? v : Math.max(best, v);
+    if (entryCountsAsDone(habit, e)) doneSet.add(d);
   }
 
   const daysElapsed = daysBetweenInclusive(bounds.start, bounds.end);
@@ -237,21 +144,18 @@ export function habitStatsMonth(habit, entries, year, month) {
 
   const avgPerLoggedDay = daysLogged > 0 ? total / daysLogged : 0;
   const avgPerDay = daysElapsed > 0 ? total / daysElapsed : 0;
-
   const coveragePct = daysElapsed > 0 ? daysLogged / daysElapsed : 0;
 
   let currentStreak = 0;
   for (let d = new Date(bounds.end); d >= bounds.start; d.setDate(d.getDate() - 1)) {
-    const iso = isoFromDate(d);
-    if (doneSet.has(iso)) currentStreak += 1;
+    if (doneSet.has(isoFromDate(d))) currentStreak += 1;
     else break;
   }
 
   let bestStreak = 0;
   let run = 0;
   for (let d = new Date(bounds.start); d <= bounds.end; d.setDate(d.getDate() + 1)) {
-    const iso = isoFromDate(d);
-    if (doneSet.has(iso)) {
+    if (doneSet.has(isoFromDate(d))) {
       run += 1;
       bestStreak = Math.max(bestStreak, run);
     } else {
@@ -268,31 +172,21 @@ export function habitStatsMonth(habit, entries, year, month) {
   const requiredPerDay = goalTotal > 0 ? (remainingDays > 0 ? remaining / remainingDays : remaining) : null;
 
   return {
-    total,
-    daysLogged,
-    best,
-    avgPerLoggedDay,
-    avgPerDay,
-    daysElapsed,
-    daysTotal,
-    coveragePct,
-    currentStreak,
-    bestStreak,
-    goalTotal,
-    expectedToDate,
-    onTrackPct,
-    requiredPerDay,
+    total, daysLogged, best, avgPerLoggedDay, avgPerDay,
+    daysElapsed, daysTotal, coveragePct, currentStreak, bestStreak,
+    goalTotal, expectedToDate, onTrackPct, requiredPerDay,
   };
 }
 
-export function buildHabitSeries(habit, entries, year) {
-  const start = new Date(year, 0, 1);
-  const now = new Date();
-  const end =
-    year === now.getFullYear()
-      ? new Date(now.getFullYear(), now.getMonth(), now.getDate())
-      : new Date(year, 11, 31);
+// 1-line wrapper for backward compatibility with App.jsx
+export function habitStatsMonth(habit, entries, year, month) {
+  return habitStats(habit, entries, year, month);
+}
 
+
+export function buildHabitSeries(habit, entries, year, month = null) {
+  const mode = month ? "month" : "year";
+  const { start, end } = periodBounds({ mode, year, month });
   const goalYearly = clampNumber(getYearlyGoal(habit));
 
   const daysInYear = (y) => {
@@ -308,13 +202,11 @@ export function buildHabitSeries(habit, entries, year) {
 
   let actualCum = 0;
   let goalCum = 0;
-
   const out = [];
+
   for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const iso = isoFromDate(d);
-
     const e = getEntry(entries, iso, habit.id);
-
     const daily = entryToNumber(habit, e, 0);
 
     actualCum += daily;
@@ -331,47 +223,7 @@ export function buildHabitSeries(habit, entries, year) {
   return out;
 }
 
+// 1-line wrapper for backward compatibility with App.jsx
 export function buildHabitSeriesMonth(habit, entries, year, month) {
-  const mIndex = Math.max(0, Math.min(11, Number(month) - 1));
-  const start = new Date(year, mIndex, 1);
-
-  const now = new Date();
-  const isCurrent = year === now.getFullYear() && mIndex === now.getMonth();
-  const end = isCurrent ? new Date(now.getFullYear(), now.getMonth(), now.getDate()) : new Date(year, mIndex + 1, 0);
-
-  const goalYearly = clampNumber(getYearlyGoal(habit));
-
-  const daysInYear = (y) => {
-    const s = new Date(y, 0, 1);
-    const e = new Date(y + 1, 0, 1);
-    return Math.round((e - s) / (1000 * 60 * 60 * 24));
-  };
-
-  const goalPerDayForDate = (dateObj) => {
-    if (!(goalYearly > 0)) return 0;
-    return goalYearly / daysInYear(dateObj.getFullYear());
-  };
-
-  let actualCum = 0;
-  let goalCum = 0;
-
-  const out = [];
-  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-    const iso = isoFromDate(d);
-
-    const e = getEntry(entries, iso, habit.id);
-    const daily = entryToNumber(habit, e, 0);
-
-    actualCum += daily;
-    if (goalYearly > 0) goalCum += goalPerDayForDate(d);
-
-    out.push({
-      date: iso,
-      daily,
-      actualCum,
-      goalCum: goalYearly > 0 ? goalCum : null,
-    });
-  }
-
-  return out;
+  return buildHabitSeries(habit, entries, year, month);
 }
