@@ -32,7 +32,6 @@ export default function HistoryTab({ entries, habits, removeLog }) {
       <div className="w-full lg:w-[360px] flex flex-col gap-4 shrink-0">
         <div className="px-2">
           <h2 className="text-[22px] font-bold tracking-tight text-foreground">History</h2>
-          <p className="text-[14px] text-muted-foreground">Track your long-term consistency.</p>
         </div>
 
         <div className="glass-card rounded-[32px] p-6 sm:px-8 transition-all hover:ring-1 hover:ring-white/30">

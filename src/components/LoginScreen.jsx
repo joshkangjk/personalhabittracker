@@ -130,7 +130,6 @@ export default function LoginScreen() {
         }}
         className="glass-card w-full max-w-sm rounded-[32px] p-8 sm:p-10 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 shadow-2xl border-white/20 relative overflow-hidden"
       >
-        <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
 
         {/* HEADER SECTION */}
         <div className="flex flex-col items-center text-center space-y-2 relative z-10 pb-2">
@@ -144,9 +143,6 @@ export default function LoginScreen() {
 
         {/* INPUT SECTION */}
         <div className="space-y-3 relative z-10">
-          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">
-            Email Address
-          </div>
 
           {!sent ? (
             <Input
@@ -184,9 +180,6 @@ export default function LoginScreen() {
           {/* 6-BOX OTP CODE */}
           {sent && (
             <div className="space-y-3 mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2 text-center">
-                Security Code
-              </div>
               <div className="flex justify-between gap-2">
                 {[...Array(6)].map((_, index) => (
                   <Input

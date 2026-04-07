@@ -37,7 +37,6 @@ export default function DailyLogTab({
         <div className="flex items-center justify-between w-full sm:w-auto">
           <div className="space-y-1">
             <h2 className="text-[22px] font-bold tracking-tight text-foreground">Daily Log</h2>
-            <p className="text-[14px] text-muted-foreground">Track your habits for today.</p>
           </div>
           
           <div className="sm:hidden block">
@@ -85,9 +84,6 @@ export default function DailyLogTab({
       <div className="glass-card rounded-[32px] p-6 sm:px-8 flex-1 flex flex-col gap-3 min-h-[300px]">
         {habits.length === 0 ? (
           <div className="h-full flex flex-col items-center justify-center py-10 text-center animate-in fade-in zoom-in-95 duration-700 flex-1">
-            <div className="bg-black/5 dark:bg-white/10 p-4 rounded-full mb-4 shadow-sm border border-black/5 dark:border-white/5">
-              <ListX className="h-8 w-8 opacity-40 text-muted-foreground" />
-            </div>
             <h3 className="text-[16px] font-semibold text-foreground/70 tracking-tight">No habits yet</h3>
             <p className="text-[14px] text-muted-foreground/60 max-w-[220px] mt-1.5 leading-relaxed">
               Click 'Add Habit' to get started.

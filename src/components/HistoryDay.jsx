@@ -1,5 +1,4 @@
 import React from "react";
-import { CheckCircle2, Circle, Trash2, Clock, Zap } from "lucide-react";
 
 export default function HistoryDay({ 
   dateISO, 
@@ -15,7 +14,6 @@ export default function HistoryDay({
       {/* HEADER: Scaled text to 14px */}
       <div className="flex items-center justify-between pb-3 border-b border-black/5 dark:border-white/5">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Zap className="h-4 w-4 text-primary" />
           <span className="text-[14px] font-semibold text-foreground/80">
             {activeHabits.length} {activeHabits.length === 1 ? "habit" : "habits"} completed
           </span>
@@ -39,13 +37,6 @@ export default function HistoryDay({
               {/* LEFT: Status & Name */}
               <div className="flex items-center gap-4">
                 <div className="shrink-0">
-                  {isDone ? (
-                    <div className="bg-primary/20 p-1.5 rounded-full">
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
-                    </div>
-                  ) : (
-                    <Circle className="h-6 w-6 text-muted-foreground/20" />
-                  )}
                 </div>
 
                 <div className="flex flex-col gap-1">
@@ -55,7 +46,6 @@ export default function HistoryDay({
                   </span>
                   {entry?.timestamp && (
                     <div className="flex items-center gap-1.5 text-[12px] text-muted-foreground/60 font-medium">
-                      <Clock className="h-3 w-3" />
                       {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
                   )}
@@ -82,7 +72,6 @@ export default function HistoryDay({
                   className="opacity-0 group-hover:opacity-100 p-2.5 rounded-xl bg-destructive/10 text-destructive transition-all hover:bg-destructive hover:text-white"
                   title="Delete log"
                 >
-                  <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>

@@ -262,7 +262,6 @@ export default function HabitTrackerMVP() {
               </DialogTrigger>
               
               <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden">
-                <div className="absolute top-0 left-0 w-full h-32 bg-primary/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2" />
                 
                 <DialogHeader className="pb-4 relative z-10">
                   <DialogTitle className="text-[22px] font-bold tracking-tight text-center">Settings</DialogTitle>
@@ -279,9 +278,7 @@ export default function HabitTrackerMVP() {
                       className="w-full justify-between rounded-2xl h-14 px-5 bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 border border-black/5 dark:border-white/5 shadow-inner text-[15px] font-semibold transition-all active:scale-[0.98]"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-background shadow-sm">
-                          {theme === "dark" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
-                        </div>
+                        {theme === "dark" ? <Moon className="h-4 w-4 text-primary" /> : <Sun className="h-4 w-4 text-primary" />}
                         Theme
                       </div>
                       <span className="text-muted-foreground text-[13px] font-medium bg-background px-3 py-1 rounded-lg shadow-sm border border-border/50">
