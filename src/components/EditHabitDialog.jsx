@@ -91,7 +91,7 @@ function save() {
                     <SelectTrigger className="h-11 text-[15px]">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 shadow-xl z-50">
                       <SelectItem value="daily">Daily</SelectItem>
                       <SelectItem value="weekly">Weekly</SelectItem>
                       <SelectItem value="monthly">Monthly</SelectItem>
