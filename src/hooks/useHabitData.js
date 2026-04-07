@@ -192,9 +192,24 @@ export function useHabitData() {
     else setCloudError("");
   }, [session?.user?.id]);
 
+  const removeLog = useCallback(async (dateISO, habitId) => {
+    const userId = session?.user?.id;
+    if (!userId) return;
+    setState((s) => ({ ...s, entries: deleteEntry(s.entries, dateISO, habitId) }));
+    const res = await supabase.from("entries").delete().eq("user_id", userId).eq("date_iso", dateISO).eq("habit_id", habitId);
+    if (res.error) setCloudError(res.error.message || "Failed to remove entry");
+    else setCloudError("");
+  }, [session?.user?.id]);
+
   const logValue = useCallback(async (dateISO, habit, value) => {
     const userId = session?.user?.id;
     if (!userId) return;
+
+    if (value === "") {
+      await removeLog(dateISO, habit.id);
+      return;
+    }
+
     setState((s) => {
       const payload = { value };
       const entriesNext = setEntry(s.entries, dateISO, habit.id, payload);
@@ -233,15 +248,6 @@ export function useHabitData() {
         else setCloudError("");
       }
     }
-  }, [session?.user?.id]);
-
-  const removeLog = useCallback(async (dateISO, habitId) => {
-    const userId = session?.user?.id;
-    if (!userId) return;
-    setState((s) => ({ ...s, entries: deleteEntry(s.entries, dateISO, habitId) }));
-    const res = await supabase.from("entries").delete().eq("user_id", userId).eq("date_iso", dateISO).eq("habit_id", habitId);
-    if (res.error) setCloudError(res.error.message || "Failed to remove entry");
-    else setCloudError("");
   }, [session?.user?.id]);
 
   const persistHabitOrder = useCallback(async (list) => {

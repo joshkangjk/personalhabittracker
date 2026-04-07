@@ -73,6 +73,13 @@ export default function HabitLogRow({
 
   const handleNumberBlur = () => {
     if (value === "" && !hasEntry) return;
+    
+    // NEW: If the user manually clears the input box, delete the log
+    if (value === "") {
+      commitWithDelay("", onLog);
+      return;
+    }
+
     const num = clampNumber(value);
     setValue(num);
     commitWithDelay(num, onLog);
@@ -85,7 +92,13 @@ export default function HabitLogRow({
   };
 
   const bump = (dir) => {
-    // Treat empty string as 0 when bumping
+    // NEW: If the user tries to subtract when the value is already 0, clear it completely
+    if (dir === -1 && (value === "" || Number(value) <= 0)) {
+      setValue("");
+      commitWithDelay("", onLog);
+      return;
+    }
+
     const currentValue = value === "" ? 0 : Number(value);
     const nextValue = clampNumber(currentValue + dir);
     setValue(nextValue);
