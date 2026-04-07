@@ -202,18 +202,18 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
   if (!habit) return null;
 
   return (
-    <div className="h-[260px] min-h-[260px] w-full rounded-2xl p-2">
+    <div className="w-full rounded-2xl p-2">
       {!(series || []).length ? (
-        <div className="h-full rounded-2xl flex items-center justify-center text-[15px] text-muted-foreground">
+        <div className="h-[260px] flex items-center justify-center text-[15px] text-muted-foreground">
           {emptyLabel || `No data yet for this habit in ${year}.`}
         </div>
       ) : (
-        <ResponsiveContainer width="100%" height="100%">
-          {/* 1. UPGRADED TO COMPOSED CHART */}
+        // FIX: Replaced height="100%" with a hardcoded pixel height (260)
+        // to prevent negative dimension crashes during tab switching.
+        <ResponsiveContainer width="100%" height={260}>
           <ComposedChart data={series} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id={chartGradientId(gradientPrefix, habit?.id)} x1="0" y1="0" x2="0" y2="1">
-                {/* 2. SLIGHTLY RICHER GRADIENT */}
                 <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.25} />
                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.0} />
               </linearGradient>
@@ -246,7 +246,6 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
               <ReferenceLine x={todayISO()} stroke="hsl(var(--primary))" strokeOpacity={0.2} strokeDasharray="4 4" />
             ) : null}
             
-            {/* 3. COMBINED AREA AND LINE WITH APPLE SPRING ANIMATION */}
             <Area
               type="monotone"
               dataKey="actualCum"
@@ -259,7 +258,6 @@ export function TrendChart({ series, habit, year, gradientPrefix, emptyLabel }) 
               animationEasing="ease-out"
             />
             
-            {/* 4. THE SECONDARY GOAL LINE */}
             {getYearlyGoal(habit) > 0 ? (
               <Line
                 type="monotone"
