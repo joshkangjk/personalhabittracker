@@ -48,8 +48,21 @@ export default function CalendarGrid({
       {/* 1. HEADER & MONTH SWITCHER */}
       <div className="flex items-center justify-between px-2">
   
-        {/* NEW: Clickable Month/Year wrapper */}
-        <div className="relative inline-flex items-center group">
+        {/* Clickable Month/Year wrapper with showPicker() for desktop support */}
+        <div 
+          className="relative inline-flex items-center group cursor-pointer"
+          onClick={(e) => {
+            // Find the hidden input and force the native picker to open
+            const input = e.currentTarget.querySelector('input[type="month"]');
+            if (input && typeof input.showPicker === 'function') {
+              try { 
+                input.showPicker(); 
+              } catch (err) {
+                console.warn("showPicker not supported on this browser", err);
+              }
+            }
+          }}
+        >
           <h3 className="text-[16px] font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
             {format(monthStart, "MMMM yyyy")}
           </h3>
@@ -60,7 +73,6 @@ export default function CalendarGrid({
             value={format(viewDate, "yyyy-MM")}
             onChange={(e) => {
               if (e.target.value) {
-                // Safely parse "YYYY-MM" to avoid timezone shifts
                 const [year, month] = e.target.value.split('-');
                 setViewDate(new Date(year, month - 1, 1));
               }
