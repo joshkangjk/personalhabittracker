@@ -134,10 +134,6 @@ export function withinYear(iso, year) {
   return iso >= `${year}-01-01` && iso <= `${year}-12-31`;
 }
 
-export function monthFromISO(iso) {
-  return iso?.slice(5, 7) || "";
-}
-
 export function daysBetweenInclusive(startDate, endDate) {
   return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
 }

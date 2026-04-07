@@ -105,12 +105,6 @@ export function deleteEntry(entries, dateISO, habitId) {
   return next;
 }
 
-export function listDatesInYear(entries, year) {
-  return Object.keys(entries)
-    .filter((d) => withinYear(d, year))
-    .sort((a, b) => (a < b ? 1 : -1));
-}
-
 export function habitStats(habit, entries, year, month = null) {
   const mode = month ? "month" : "year";
   const bounds = periodBounds({ mode, year, month });
