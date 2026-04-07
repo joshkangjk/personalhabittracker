@@ -42,12 +42,6 @@ export function formatPct01(x) {
   return `${Math.round(n * 100)}%`;
 }
 
-export function formatStreakDays(n) {
-  const v = Number(n ?? 0);
-  if (!Number.isFinite(v) || v <= 0) return "0";
-  return String(Math.round(v));
-}
-
 export function formatRequired(habit, v) {
   if (v === null || v === undefined) return "";
   const n = Number(v);
