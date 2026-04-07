@@ -14,12 +14,12 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function CalendarGrid({ 
-  viewDate,      
-  setViewDate,   
-  entries,       
-  habits,        
-  selectedDate,  
-  onSelectDate   
+  viewDate,      // Date object controlling which month is displayed
+  setViewDate,   // Function to update viewDate
+  entries,       // Your global entries object
+  habits,        // Your array of habits (used for completion %)
+  selectedDate,  // The currently "inspected" date string (YYYY-MM-DD)
+  onSelectDate   // Function to update the selectedDate
 }) {
   // Calendar Logic
   const monthStart = startOfMonth(viewDate);
@@ -32,75 +32,77 @@ export default function CalendarGrid({
     end: endDate 
   });
 
-  // Heatmap Calculation
+  // Heatmap Calculation: Returns a value between 0 and 1
   const getDayStats = (dateISO) => {
     const dayEntries = entries[dateISO];
     if (!dayEntries) return 0;
     
+    // Count how many habits have a logged value for this specific day
     const completedCount = habits.filter(h => dayEntries[h.id] !== undefined).length;
     return habits.length > 0 ? completedCount / habits.length : 0;
   };
 
-  // Navigation Handlers
-  const handlePrevMonth = () => setViewDate(subMonths(viewDate, 1));
-  const handleNextMonth = () => setViewDate(addMonths(viewDate, 1));
-  const handleToday = () => setViewDate(new Date());
-
-  const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-
   return (
-    <div className="space-y-4 animate-in fade-in duration-500">
+    <div className="w-full select-none space-y-6">
       
-      {/* HEADER & NAVIGATION */}
+      {/* 1. HEADER & MONTH SWITCHER */}
       <div className="flex items-center justify-between px-2">
-        <h3 className="text-[16px] font-bold text-foreground tracking-tight">
-          {format(monthStart, "MMMM yyyy")}
-        </h3>
-        
-        <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-1 rounded-2xl border border-black/5 dark:border-white/5">
+  
+        {/* NEW: Clickable Month/Year wrapper */}
+        <div className="relative inline-flex items-center group">
+          <h3 className="text-[16px] font-bold text-foreground tracking-tight group-hover:text-primary transition-colors">
+            {format(monthStart, "MMMM yyyy")}
+          </h3>
+          
+          {/* Invisible native month picker */}
+          <input 
+            type="month" 
+            value={format(viewDate, "yyyy-MM")}
+            onChange={(e) => {
+              if (e.target.value) {
+                // Safely parse "YYYY-MM" to avoid timezone shifts
+                const [year, month] = e.target.value.split('-');
+                setViewDate(new Date(year, month - 1, 1));
+              }
+            }}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            title="Select Month and Year"
+          />
+        </div>
+        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-xl border border-white/5">
           <button 
-            onClick={handlePrevMonth}
-            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
-            title="Previous Month"
+            onClick={() => setViewDate(subMonths(viewDate, 1))}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all active:scale-90"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
-          
           <button 
-            onClick={handleToday}
-            className="px-3 py-1.5 text-[12px] font-bold rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
-          >
-            Today
-          </button>
-
-          <button 
-            onClick={handleNextMonth}
-            className="p-1.5 rounded-xl text-muted-foreground hover:text-foreground hover:bg-black/10 dark:hover:bg-white/10 transition-all active:scale-95"
-            title="Next Month"
+            onClick={() => setViewDate(addMonths(viewDate, 1))}
+            className="p-1.5 rounded-lg hover:bg-white/10 text-muted-foreground hover:text-foreground transition-all active:scale-90"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      {/* WEEKDAY LABELS */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5 mb-1">
-        {weekDays.map(day => (
-          <div key={day} className="text-[11px] font-bold text-muted-foreground/60 uppercase tracking-widest text-center">
+      {/* 2. WEEKDAY LABELS */}
+      <div className="grid grid-cols-7 text-center">
+        {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
+          <span key={i} className="text-[10px] font-bold text-muted-foreground/30 uppercase tracking-widest">
             {day}
-          </div>
+          </span>
         ))}
       </div>
 
-      {/* CALENDAR GRID */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-1.5">
+      {/* 3. THE DAYS GRID */}
+      <div className="grid grid-cols-7 gap-1.5">
         {calendarDays.map((day) => {
           const dateISO = format(day, "yyyy-MM-dd");
           const isCurrentMonth = isSameMonth(day, monthStart);
-          const currentIsToday = isToday(day);
           const isSelected = selectedDate === dateISO;
+          const currentIsToday = isToday(day);
           const completionRatio = getDayStats(dateISO);
-
+          
           return (
             <button
               key={dateISO}
@@ -114,9 +116,11 @@ export default function CalendarGrid({
                 }
               `}
               style={{
+                // Background intensity scales with completion ratio
                 backgroundColor: isCurrentMonth && completionRatio > 0 
                   ? `rgba(var(--primary-rgb), ${0.15 + completionRatio * 0.75})` 
                   : "rgba(255, 255, 255, 0.03)",
+                // Text color flips to white if the background is dark enough or selected
                 color: (isCurrentMonth && completionRatio > 0.4) || isSelected 
                   ? "#FFFFFF" 
                   : "var(--foreground)"
