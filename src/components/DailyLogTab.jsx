@@ -56,12 +56,38 @@ export default function DailyLogTab({
               <ChevronLeft className="h-4 w-4" />
             </Button>
             
-            <Input
-              type="date"
-              value={activeDate}
-              onChange={handleActiveDateChange}
-              className="w-full sm:w-[135px] h-8 px-1 bg-transparent shadow-none border-0 text-[15px] text-center font-semibold focus-visible:ring-0 [appearance:textfield] [&::-webkit-calendar-picker-indicator]:opacity-40 hover:[&::-webkit-calendar-picker-indicator]:opacity-100 transition-opacity cursor-pointer"
-            />
+            {/* Custom Clickable Date Picker */}
+            <div 
+              className="relative flex items-center justify-center w-full sm:w-[145px] h-8 cursor-pointer group"
+              onClick={(e) => {
+                // Force desktop browsers to open the native calendar dropdown
+                const input = e.currentTarget.querySelector('input[type="date"]');
+                if (input && typeof input.showPicker === 'function') {
+                  try { input.showPicker(); } catch (err) {}
+                }
+              }}
+            >
+              {/* The visible text (safely formatted to avoid timezone bugs) */}
+              <span className="text-[15px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                {(() => {
+                  const [y, m, d] = activeDate.split('-');
+                  return new Date(y, m - 1, d).toLocaleDateString(undefined, { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  });
+                })()}
+              </span>
+              
+              {/* The invisible functional input */}
+              <input
+                type="date"
+                value={activeDate}
+                onChange={handleActiveDateChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                style={{ colorScheme: 'dark' }} // helps native mobile picker match themes if needed
+              />
+            </div>
 
             <Button 
               variant="ghost" 
