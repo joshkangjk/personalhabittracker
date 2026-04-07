@@ -5,7 +5,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BarChart3, Lock, Sun, Moon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  listDatesInYear,
   habitStats,
   habitStatsMonth,
   buildHabitSeries,
@@ -76,7 +75,6 @@ export default function PublicView({ token }) {
   }, [token, year]);
 
   const selectedYear = year;
-  const datesInYear = useMemo(() => listDatesInYear(publicState.entries, selectedYear), [publicState.entries, selectedYear]);
 
   const yearSummary = useMemo(() => {
     const out = publicState.habits.map((h) => {
