@@ -12,8 +12,8 @@ import DashboardTab from "./components/DashboardTab";
 import HistoryTab from "./components/HistoryTab";
 import { YearPicker, ShareStatus } from "./components/DashboardWidgets";
 
-import { todayISO, makeShareToken, monthFromISO, getPublicTokenFromPath, buildYearOptions } from "./lib/helpers";
-import { listDatesInYear, habitStats, habitStatsMonth, buildHabitSeries, buildHabitSeriesMonth } from "./lib/stats";
+import { todayISO, makeShareToken, getPublicTokenFromPath, buildYearOptions } from "./lib/helpers";
+import { habitStats, habitStatsMonth, buildHabitSeries, buildHabitSeriesMonth } from "./lib/stats";
 
 import { useHabitData } from "./hooks/useHabitData";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -42,7 +42,6 @@ export default function HabitTrackerMVP() {
     persistHabitOrder
   } = useHabitData();
 
-  const [historyMonth, setHistoryMonth] = useState("all");
   const [dashboardMonth, setDashboardMonth] = useState(() => String(new Date().getMonth() + 1).padStart(2, "0"));
   const [dashboardSummaryMode, setDashboardSummaryMode] = useState("year");
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -157,14 +156,6 @@ export default function HabitTrackerMVP() {
     [activeDate, deleteHabit, logValue, updateHabit]
   );
 
-  const datesInYear = useMemo(() => listDatesInYear(state.entries, selectedYear), [state.entries, selectedYear]);
-
-  const filteredHistory = useMemo(() => {
-    return historyMonth === "all"
-      ? datesInYear
-      : datesInYear.filter((d) => monthFromISO(d) === historyMonth);
-  }, [datesInYear, historyMonth]);
-
   const yearSummary = useMemo(() => {
     const activeHabits = state.habits;
     const out = activeHabits.map((h) => {
@@ -220,10 +211,7 @@ export default function HabitTrackerMVP() {
     <div className="min-h-screen w-full text-foreground text-[15px] font-sans antialiased selection:bg-primary/20">
       <div className="relative mx-auto max-w-6xl p-6 md:p-8 space-y-6 md:space-y-8 z-10">
         
-        {/* REFINED HEADER: Now uses glass-card and sits seamlessly at the top */}
         <header className="glass-card rounded-[32px] px-6 py-4 flex items-center justify-between transition-all duration-300">
-          
-          {/* LEFT SIDE: Title & Cloud Status */}
           <div className="flex items-center gap-4">
             <h1 className="text-[20px] font-bold tracking-tight text-foreground">Habit Tracker</h1>
             
@@ -244,10 +232,7 @@ export default function HabitTrackerMVP() {
             </div>
           </div>
 
-          {/* RIGHT SIDE: Primary Actions */}
           <div className="flex items-center gap-2 sm:gap-4">
-            
-            {/* Desktop Share Button */}
             <div className="hidden sm:flex items-center gap-3">
               <ShareStatus shareError={shareError} shareOk={shareOk} />
               <Button onClick={handleCreateShareLink} className="gap-2 rounded-full px-5 shadow-lg shadow-primary/20 bg-primary text-white hover:scale-105 active:scale-95 transition-all font-bold text-[13px]" disabled={shareBusy}>
@@ -255,7 +240,6 @@ export default function HabitTrackerMVP() {
               </Button>
             </div>
 
-            {/* UPGRADED SETTINGS MODAL */}
             <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
               <DialogTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full text-muted-foreground hover:text-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-all active:scale-95">
@@ -264,14 +248,11 @@ export default function HabitTrackerMVP() {
               </DialogTrigger>
               
               <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden">
-                
                 <DialogHeader className="pb-4 relative z-10">
                   <DialogTitle className="text-[22px] font-bold tracking-tight text-center">Settings</DialogTitle>
                 </DialogHeader>
 
                 <div className="grid gap-6 relative z-10">
-                  
-                  {/* Section: Appearance */}
                   <div className="space-y-3">
                     <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Appearance</h3>
                     <Button 
@@ -289,7 +270,6 @@ export default function HabitTrackerMVP() {
                     </Button>
                   </div>
 
-                  {/* Section: Data & Time */}
                   <div className="space-y-3">
                     <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Data</h3>
                     <div className="flex items-center justify-between rounded-2xl bg-black/5 dark:bg-white/5 px-5 h-14 border border-black/5 dark:border-white/5 shadow-inner">
@@ -304,7 +284,6 @@ export default function HabitTrackerMVP() {
                     </div>
                   </div>
 
-                  {/* Section: Mobile Share */}
                   <div className="sm:hidden space-y-3">
                     <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Share</h3>
                     <Button onClick={handleCreateShareLink} variant="secondary" className="w-full gap-2 rounded-2xl h-14 text-[15px] font-bold shadow-inner border border-primary/10 bg-primary/10 text-primary hover:bg-primary/20 transition-all active:scale-[0.98]" disabled={shareBusy}>
@@ -315,7 +294,6 @@ export default function HabitTrackerMVP() {
                     </div>
                   </div>
 
-                  {/* Section: Account */}
                   <div className="space-y-3 pt-2">
                     <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest px-2">Account</h3>
                     <div className="grid grid-cols-2 gap-3">
@@ -335,25 +313,14 @@ export default function HabitTrackerMVP() {
         </header>
 
         <Tabs defaultValue="log" className="w-full flex flex-col items-center mt-6 sm:mt-8">
-          
-          {/* FLOATING NAVIGATION PILL */}
           <TabsList className="sticky top-6 z-50 glass-card rounded-full p-1.5 shadow-2xl shadow-black/10 dark:shadow-black/40 border-white/20 mb-8 flex w-fit min-w-[340px] max-w-md transition-all">
-            <TabsTrigger
-              value="log"
-              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
-            >
+            <TabsTrigger value="log" className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground">
               Daily Log
             </TabsTrigger>
-            <TabsTrigger
-              value="dashboard"
-              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
-            >
+            <TabsTrigger value="dashboard" className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground">
               Dashboard
             </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground"
-            >
+            <TabsTrigger value="history" className="flex-1 rounded-full px-6 py-2.5 text-[14px] font-bold transition-all duration-300 ease-out data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:shadow-primary/30 text-muted-foreground hover:text-foreground">
               History
             </TabsTrigger>
           </TabsList>
@@ -361,8 +328,8 @@ export default function HabitTrackerMVP() {
           <div className="w-full">
             <TabsContent value="log" className="space-y-6 mt-0 animate-in fade-in slide-in-from-bottom-2 duration-300 ease-out">
               <PullToRefresh 
-                onRefresh={() => window.location.reload()}
-                pullingContent={""} // Removes "Pull to refresh" text for a cleaner look
+                onRefresh={async () => window.location.reload()}
+                pullingContent={""}
                 refreshingContent={<div className="flex justify-center p-4"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>}
               >
                 <DailyLogTab
