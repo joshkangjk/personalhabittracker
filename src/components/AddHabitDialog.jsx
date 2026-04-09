@@ -55,7 +55,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Add a habit</DialogTitle>
         </DialogHeader>

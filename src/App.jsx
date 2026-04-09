@@ -60,21 +60,45 @@ export default function HabitTrackerMVP() {
   });
 
   const copyToClipboard = useCallback(async (text) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
+    // 1. Try modern clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
       try {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand("copy");
-        ta.remove();
+        await navigator.clipboard.writeText(text);
         return true;
-      } catch {
-        return false;
+      } catch (err) {
+        console.warn("Modern clipboard failed, trying fallback.");
       }
+    }
+    
+    // 2. Bulletproof fallback for older iOS Safari
+    try {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      // Prevent zooming and scrolling issues on iOS
+      ta.style.fontSize = "16px";
+      ta.style.position = "fixed"; 
+      ta.style.top = "0";
+      ta.style.left = "-9999px";
+      
+      document.body.appendChild(ta);
+      
+      // iOS requires a specific selection method, standard .select() fails
+      if (navigator.userAgent.match(/ipad|iphone/i)) {
+        const range = document.createRange();
+        range.selectNodeContents(ta);
+        const selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        ta.setSelectionRange(0, 999999);
+      } else {
+        ta.select();
+      }
+      
+      const success = document.execCommand("copy");
+      document.body.removeChild(ta);
+      return success;
+    } catch (err) {
+      return false;
     }
   }, []);
 
@@ -102,6 +126,25 @@ export default function HabitTrackerMVP() {
       const t = up.data?.share_token || token;
       const url = `${window.location.origin}/view/${encodeURIComponent(t)}`;
 
+      // 1. TRY NATIVE iOS/ANDROID SHARE SHEET FIRST
+      if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        try {
+          await navigator.share({
+            title: "Habit Tracker",
+            text: "Check out my habit progress!",
+            url: url,
+          });
+          setShareOk(true);
+          setTimeout(() => setShareOk(false), 2000);
+          return; // Stop here if native share succeeds
+        } catch (err) {
+          // If user manually closes the share sheet, abort quietly
+          if (err.name === "AbortError") return; 
+          // Otherwise, fall through to the clipboard copy
+        }
+      }
+
+      // 2. FALLBACK TO CLIPBOARD (For Desktop or if native share fails)
       const ok = await copyToClipboard(url);
 
       if (!ok) {
@@ -247,7 +290,7 @@ export default function HabitTrackerMVP() {
                 </Button>
               </DialogTrigger>
               
-              <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden">
+              <DialogContent className="glass-card sm:max-w-sm rounded-[32px] p-6 sm:p-8 border-white/20 shadow-2xl overflow-hidden" aria-describedby={undefined}>
                 <DialogHeader className="pb-4 relative z-10">
                   <DialogTitle className="text-[22px] font-bold tracking-tight text-center">Settings</DialogTitle>
                 </DialogHeader>

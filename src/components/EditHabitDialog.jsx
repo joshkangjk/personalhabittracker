@@ -44,7 +44,7 @@ function save() {
         {children}
       </DialogTrigger>
 
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>Edit habit</DialogTitle>
         </DialogHeader>
@@ -133,7 +133,7 @@ function save() {
         </div>
 
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md" aria-describedby={undefined}>
             <DialogHeader>
               <DialogTitle>Delete habit?</DialogTitle>
             </DialogHeader>
