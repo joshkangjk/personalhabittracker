@@ -13,7 +13,7 @@ import HistoryTab from "./components/HistoryTab";
 import { YearPicker, ShareStatus } from "./components/DashboardWidgets";
 
 import { todayISO, makeShareToken, getPublicTokenFromPath, buildYearOptions } from "./lib/helpers";
-import { habitStats, habitStatsMonth, buildHabitSeries, buildHabitSeriesMonth } from "./lib/stats";
+import { habitStats, buildHabitSeries } from "./lib/stats";
 
 import { useHabitData } from "./hooks/useHabitData";
 import { useIsMobile } from "./hooks/useIsMobile";
@@ -196,7 +196,7 @@ export default function HabitTrackerMVP() {
   const monthSummary = useMemo(() => {
     const activeHabits = state.habits;
     const out = activeHabits.map((h) => {
-      const st = habitStatsMonth(h, state.entries, selectedYear, dashboardMonth);
+      const st = habitStats(h, state.entries, selectedYear, dashboardMonth);
       return { habit: h, stats: st };
     });
     out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
@@ -216,7 +216,7 @@ export default function HabitTrackerMVP() {
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
     if (dashboardSummaryMode === "month") {
-      return buildHabitSeriesMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
+      return buildHabitSeries(focusedHabit, state.entries, selectedYear, dashboardMonth);
     }
     return buildHabitSeries(focusedHabit, state.entries, selectedYear);
   }, [focusedHabit, state.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
@@ -224,7 +224,7 @@ export default function HabitTrackerMVP() {
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
     if (dashboardSummaryMode === "month") {
-      return habitStatsMonth(focusedHabit, state.entries, selectedYear, dashboardMonth);
+      return habitStats(focusedHabit, state.entries, selectedYear, dashboardMonth);
     }
     return habitStats(focusedHabit, state.entries, selectedYear);
   }, [focusedHabit, state.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);

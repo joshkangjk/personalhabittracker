@@ -172,12 +172,6 @@ export function habitStats(habit, entries, year, month = null) {
   };
 }
 
-// 1-line wrapper for backward compatibility with App.jsx
-export function habitStatsMonth(habit, entries, year, month) {
-  return habitStats(habit, entries, year, month);
-}
-
-
 export function buildHabitSeries(habit, entries, year, month = null) {
   const mode = month ? "month" : "year";
   const { start, end } = periodBounds({ mode, year, month });
@@ -215,9 +209,4 @@ export function buildHabitSeries(habit, entries, year, month = null) {
   }
 
   return out;
-}
-
-// 1-line wrapper for backward compatibility with App.jsx
-export function buildHabitSeriesMonth(habit, entries, year, month) {
-  return buildHabitSeries(habit, entries, year, month);
 }
