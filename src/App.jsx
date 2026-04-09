@@ -60,46 +60,16 @@ export default function HabitTrackerMVP() {
   });
 
   const copyToClipboard = useCallback(async (text) => {
-    // 1. Try modern clipboard API
     if (navigator.clipboard && window.isSecureContext) {
       try {
         await navigator.clipboard.writeText(text);
         return true;
       } catch (err) {
-        console.warn("Modern clipboard failed, trying fallback.");
+        console.error("Clipboard write failed:", err);
+        return false;
       }
     }
-    
-    // 2. Bulletproof fallback for older iOS Safari
-    try {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      // Prevent zooming and scrolling issues on iOS
-      ta.style.fontSize = "16px";
-      ta.style.position = "fixed"; 
-      ta.style.top = "0";
-      ta.style.left = "-9999px";
-      
-      document.body.appendChild(ta);
-      
-      // iOS requires a specific selection method, standard .select() fails
-      if (navigator.userAgent.match(/ipad|iphone/i)) {
-        const range = document.createRange();
-        range.selectNodeContents(ta);
-        const selection = window.getSelection();
-        selection.removeAllRanges();
-        selection.addRange(range);
-        ta.setSelectionRange(0, 999999);
-      } else {
-        ta.select();
-      }
-      
-      const success = document.execCommand("copy");
-      document.body.removeChild(ta);
-      return success;
-    } catch (err) {
-      return false;
-    }
+    return false;
   }, []);
 
   const handleCreateShareLink = useCallback(async () => {

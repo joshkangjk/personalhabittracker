@@ -81,52 +81,16 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
             </div>
           </div>
 
-          {type === "number" ? (
-            <div className="grid md:grid-cols-2 gap-3">
+          <div className={`grid gap-3 ${type === "number" ? "md:grid-cols-2" : ""}`}>
+            {/* Unit Input - Only shows for numbers */}
+            {type === "number" && (
               <div className="grid gap-2">
                 <Label className="text-[13px] text-muted-foreground">Unit</Label>
                 <Input className="h-11 text-[15px]" value={unit} onChange={(e) => setUnit(e.target.value)} />
               </div>
+            )}
 
-              <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <Label className="text-[13px] text-muted-foreground">Goal</Label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[13px] text-muted-foreground">{goalEnabled ? "On" : "Off"}</span>
-                    <Switch
-                      checked={goalEnabled}
-                      onCheckedChange={(v) => {
-                        setGoalEnabled(Boolean(v));
-                        if (!v) setGoalValue("");
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {goalEnabled ? (
-                  <div className="flex gap-2">
-                    <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
-                      <SelectTrigger className="flex-1 h-11 text-[15px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-white dark:bg-zinc-950 border border-black/10 dark:border-white/10 shadow-xl z-50">
-                        <SelectItem value="daily">Daily</SelectItem>
-                        <SelectItem value="weekly">Weekly</SelectItem>
-                        <SelectItem value="monthly">Monthly</SelectItem>
-                        <SelectItem value="yearly">Yearly</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <Input
-                      className="w-[140px] h-11 text-[15px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                      type="number"
-                      value={goalValue}
-                      onChange={(e) => setGoalValue(e.target.value)}
-                    />
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ) : (
+            {/* Goal UI - Shows for everything, written only once */}
             <div className={`grid gap-1.5 transition-opacity ${goalEnabled ? "opacity-100" : "opacity-70"}`}>
               <div className="flex items-center justify-between gap-2">
                 <Label className="text-[13px] text-muted-foreground">Goal</Label>
@@ -142,7 +106,7 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                 </div>
               </div>
 
-              {goalEnabled ? (
+              {goalEnabled && (
                 <div className="flex gap-2">
                   <Select value={goalPeriod} onValueChange={(v) => setGoalPeriod(v)}>
                     <SelectTrigger className="flex-1 h-11 text-[15px]">
@@ -162,9 +126,9 @@ export default function AddHabitDialog({ onAdd, uuid, clampNumber }) {
                     onChange={(e) => setGoalValue(e.target.value)}
                   />
                 </div>
-              ) : null}
+              )}
             </div>
-          )}
+          </div>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
