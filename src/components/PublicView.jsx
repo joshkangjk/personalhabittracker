@@ -157,10 +157,16 @@ export default function PublicView({ token }) {
         
         {/* HEADER */}
         <header className="glass-card rounded-[32px] px-6 py-4 flex items-center justify-between transition-all duration-300">
-          <div className="flex items-center gap-4 flex-wrap">
-            <h1 className="text-[20px] font-bold tracking-tight flex items-center gap-3">
+          
+          {/* Removed flex-wrap to keep things inline */}
+          <div className="flex items-center gap-4">
+            
+            {/* Added whitespace-nowrap to prevent the title from breaking to two lines */}
+            <h1 className="text-[20px] font-bold tracking-tight flex items-center gap-3 whitespace-nowrap">
               Habit Tracker
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase shadow-inner">
+              
+              {/* Changed inline-flex to hidden sm:inline-flex so it disappears on mobile */}
+              <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/5 dark:bg-white/10 border border-black/5 dark:border-white/5 text-[11px] font-bold tracking-widest text-muted-foreground uppercase shadow-inner">
                 <Lock className="h-3 w-3" /> Shared View
               </span>
             </h1>
