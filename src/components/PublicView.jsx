@@ -4,12 +4,7 @@ import { supabase } from "../supabaseClient";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BarChart3, Lock, Sun, Moon, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  habitStats,
-  habitStatsMonth,
-  buildHabitSeries,
-  buildHabitSeriesMonth
-} from "../lib/stats";
+import { habitStats,buildHabitSeries } from "../lib/stats";
 import { normalizePublicHabit } from "../services/habitService";
 import { YearSummaryList, HabitStatsGrid, TrendChart } from "./DashboardWidgets";
 import { useTheme } from "../hooks/useTheme";
@@ -87,7 +82,7 @@ export default function PublicView({ token }) {
 
   const monthSummary = useMemo(() => {
     const out = publicState.habits.map((h) => {
-      const st = habitStatsMonth(h, publicState.entries, selectedYear, dashboardMonth);
+      const st = habitStats(h, publicState.entries, selectedYear, dashboardMonth);
       return { habit: h, stats: st };
     });
     out.sort((a, b) => (b.stats.total || 0) - (a.stats.total || 0));
@@ -107,7 +102,7 @@ export default function PublicView({ token }) {
   const focusedSeries = useMemo(() => {
     if (!focusedHabit) return [];
     if (dashboardSummaryMode === "month") {
-      return buildHabitSeriesMonth(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
+      return buildHabitSeries(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
     }
     return buildHabitSeries(focusedHabit, publicState.entries, selectedYear);
   }, [focusedHabit, publicState.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
@@ -115,7 +110,7 @@ export default function PublicView({ token }) {
   const focusedStats = useMemo(() => {
     if (!focusedHabit) return null;
     if (dashboardSummaryMode === "month") {
-      return habitStatsMonth(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
+      return habitStats(focusedHabit, publicState.entries, selectedYear, dashboardMonth);
     }
     return habitStats(focusedHabit, publicState.entries, selectedYear);
   }, [focusedHabit, publicState.entries, selectedYear, dashboardMonth, dashboardSummaryMode]);
