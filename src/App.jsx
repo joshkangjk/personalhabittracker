@@ -111,48 +111,32 @@ export default function HabitTrackerMVP() {
     setShareError("");
 
     try {
+      // 1. Generate the token and URL immediately
       const token = makeShareToken();
+      const url = `${window.location.origin}/view/${encodeURIComponent(token)}`;
+
+      // 2. OPTIMISTIC COPY: Copy to clipboard BEFORE talking to the database.
+      // Because this happens instantly after the tap, Safari will never block it.
+      const ok = await copyToClipboard(url);
+
+      if (!ok) {
+        throw new Error("Could not access clipboard. Please copy manually: " + url);
+      }
+
+      // 3. Now that the link is safely on the clipboard, do the background database work
       const up = await supabase
         .from("public_profiles")
         .upsert(
           { user_id: userId, share_token: token, is_enabled: true, updated_at: new Date().toISOString() },
           { onConflict: "user_id" }
-        )
-        .select("share_token")
-        .single();
+        );
 
       if (up.error) throw new Error(up.error.message);
 
-      const t = up.data?.share_token || token;
-      const url = `${window.location.origin}/view/${encodeURIComponent(t)}`;
-
-      // 1. TRY NATIVE iOS/ANDROID SHARE SHEET FIRST
-      if (navigator.share && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        try {
-          await navigator.share({
-            title: "Habit Tracker",
-            text: "Check out my habit progress!",
-            url: url,
-          });
-          setShareOk(true);
-          setTimeout(() => setShareOk(false), 2000);
-          return; // Stop here if native share succeeds
-        } catch (err) {
-          // If user manually closes the share sheet, abort quietly
-          if (err.name === "AbortError") return; 
-          // Otherwise, fall through to the clipboard copy
-        }
-      }
-
-      // 2. FALLBACK TO CLIPBOARD (For Desktop or if native share fails)
-      const ok = await copyToClipboard(url);
-
-      if (!ok) {
-        setShareError("Could not copy the link. Please copy manually: " + url);
-      } else {
-        setShareOk(true);
-        setTimeout(() => setShareOk(false), 2000);
-      }
+      // Success!
+      setShareOk(true);
+      setTimeout(() => setShareOk(false), 2000);
+      
     } catch (e) {
       setShareError(e?.message || "Failed to create share link");
     } finally {
