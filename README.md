@@ -1,16 +1,63 @@
-# React + Vite
+🗓️ Personal Habit Tracker
+A modern, responsive habit-tracking web application built to help users build consistency and visualize their progress. This project leverages React 19 for the frontend and Supabase for real-time data persistence.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+✨ Features
+Daily Logging: Check off habits with a streamlined daily interface.
 
-Currently, two official plugins are available:
+Progress Visualization: Data-driven insights using Recharts to monitor streaks and completion rates.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Customizable Habits: Add, edit, and categorize habits with support for specific frequencies.
 
-## React Compiler
+PWA Ready: Built with vite-plugin-pwa for an app-like experience on mobile and desktop.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Accessible UI: Built using Radix UI primitives for high-quality, accessible components like dialogs, switches, and tabs.
 
-## Expanding the ESLint configuration
+Responsive Design: Fully responsive layout styled with Tailwind CSS.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+🚀 Tech Stack
+Frontend: React 19, Vite
+
+Styling: Tailwind CSS, Lucide React (Icons)
+
+UI Components: Radix UI, Class Variance Authority
+
+Backend/Database: Supabase
+
+Charts: Recharts
+
+Date Management: date-fns
+
+🛠️ Getting Started
+Prerequisites
+Node.js (Latest LTS recommended)
+
+npm or yarn
+
+Installation
+Clone the repository:
+
+Bash
+git clone https://github.com/joshkangjk/personalhabittracker.git
+cd personalhabittracker
+Install dependencies:
+
+Bash
+npm install
+Set up Environment Variables:
+Create a .env file in the root directory and add your Supabase credentials:
+
+Code snippet
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+Run the development server:
+
+Bash
+npm run dev
+📦 Available Scripts
+npm run dev: Runs the app in development mode with HMR.
+
+npm run build: Builds the app for production to the dist folder.
+
+npm run lint: Runs ESLint to find and fix code issues.
+
+npm run preview: Locally previews the production build.
