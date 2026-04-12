@@ -9,24 +9,32 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon.png'],
+      // 1. Tell Vite to cache these 4 files for offline use
+      includeAssets: [
+        'blackicon.svg', 
+        'whiteicon.svg', 
+        'blackappleicon.png', 
+        'whiteappleicon.png'
+      ],
       manifest: {
         name: 'Personal Habit Tracker',
         short_name: 'Habits',
         description: 'Track your daily consistency.',
         theme_color: '#ffffff',
         background_color: '#ffffff',
-        display: 'standalone', // This hides the browser URL bar!
+        display: 'standalone',
         orientation: 'portrait',
+        // 2. Android / Chrome PWA Manifest Icons
         icons: [
           {
-            src: 'appleicon.png',
-            sizes: '192x192',
-            type: 'image/png'
+            src: 'blackandroidicon.png',
+            sizes: '192x192 512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
           },
           {
-            src: 'androidicon.png',
-            sizes: '512x512',
+            src: 'whiteandroidicon.png',
+            sizes: '192x192 512x512',
             type: 'image/png',
             purpose: 'any maskable'
           }
