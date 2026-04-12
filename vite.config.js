@@ -32,12 +32,6 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           },
-          {
-            src: 'whiteandroidicon.png',
-            sizes: '192x192 512x512',
-            type: 'image/png',
-            purpose: 'any maskable'
-          }
         ]
       }
     })
